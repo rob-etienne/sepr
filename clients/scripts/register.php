@@ -100,7 +100,7 @@ else
 	
 	// perform login with db check
 	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
+	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
 	
 	// Check connection
 	if ($conn->connect_error) 
@@ -126,12 +126,18 @@ else
 	$email = htmlspecialchars($email);
 	$email = mysqli_real_escape_string($conn, $email );
 	
-	// clean up password
-	$pass = trim($_POST['pass']);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
+	// get password input
+	$pass = $_POST[ 'password' ];
+	
+	// PASSWORD_DEFAULT will always be used to apply the strongest supported hashing algorithm.
+	// PHP will choose the encryption to use and it might change in the future 
+	// at time of writing it will be using CRYPT_BLWFISH, salt and type of encryption is stores together 
+	// with the hash it self
+	$options = [
+		'cost' => 12
+	];
+	
+	$pass = password_hash($pass, PASSWORD_DEFAULT, $options);
 	
 	// query without file upload
 	$sql = "insert into clients(first_name, last_name, email, password_hash) values ('$fname', '$lname', '$email', '$pass')";

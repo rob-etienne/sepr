@@ -79,30 +79,44 @@ else // log in
 	$email = htmlspecialchars($email);
 	$email = mysqli_real_escape_string($conn, $email );
 	
-	// clean up password
-	$pass = trim($_POST[ 'password' ]);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
+	// get password input
+	$pass = $_POST[ 'password' ];
+
+	// get row hash from database 
+	$sql = "select email, password_hash, active from clients where email = '$email'";
+	$result = mysqli_query($conn, $sql);
+	if (mysqli_num_rows( $result ) == 0)
+	{
+		// Email not found in the database... 
+		// Login failed
+    	$_SESSION['error'] = "Incorrect email or password.";
+		// redirect to login page
+    	header('Location: ../index.php');		
+	}
+	
+	$row = mysqli_fetch_assoc($result);
+	$hash = $row['password_hash'];
 
 	// assemle query
-	$sql = "select * from clients where email = '$email' and password_hash = '$pass'";
+	//$sql = "select * from clients where email = '$email' and password_hash = '$pass'";
 	
 	// run the query
-	$result = mysqli_query($conn, $sql);
+	//$result = mysqli_query($conn, $sql);
 
-	// true if employee exists
-	if ( $result && mysqli_num_rows( $result ) == 1 ) 
+	// check password
+	$matched = password_verify( $pass, $hash );
+	
+	// true if password is correct
+	if ( $matched == true ) 
 	{
 		// assign vaues from db to row
-		$row = mysqli_fetch_assoc($result);
+		//$row = mysqli_fetch_assoc($result);
 		
-		if(!$row['active'] == 1) // true if client not logged in (field active = 1)
+		if($row['active'] != 1) // true if client not logged in (field active = 1)
 		{
 			// get values
 		    $email = $row['email'];
-        	$pass = $row['password_hash'];
+        	//$pass = $row['password_hash'];
 			
 			/* free result set */
     		mysqli_free_result($result);
@@ -160,7 +174,7 @@ else // log in
 	else 
 	{
 		// Login failed
-    	$_SESSION['error'] = "Incorrect email or password.";
+    	$_SESSION['error'] = "Incorrect email or password. \n$pass \n\n$hash" ;
 		// redirect to login page
     	header('Location: ../index.php');	
 	}
