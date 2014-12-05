@@ -2,8 +2,8 @@
 /**
  * Database configuration
  */
-define('DB_USERNAME', 'root');
-define('DB_PASSWORD', 'root');
+define('DB_USERNAME', 'sepr_user');
+define('DB_PASSWORD', 'xsFDr4vuZQH2yFAP');
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'sepr_project');
 

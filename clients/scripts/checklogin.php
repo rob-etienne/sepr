@@ -65,7 +65,7 @@ else // log in
 {	
 	// perform login with db check
 	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
+	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
 	
 	// Check connection
 	if ($conn->connect_error) 
