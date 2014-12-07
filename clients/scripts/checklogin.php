@@ -44,21 +44,25 @@ if (empty($_POST['email']) || !empty($errEmail) || !empty($errEmailVal) || empty
       	{
         	$_SESSION['error'] = "Please enter your email.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errEmailVal))
       	{
         	$_SESSION['error'] = "The email you've entered is not valid.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errPass))
       	{
         	$_SESSION['error'] = "Please enter a password.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errCSRF))
       	{
         	$_SESSION['error'] = $errCSRF;
 			header('Location: ../index.php');
+			exit();
       	}
    	}
 }
@@ -72,79 +76,63 @@ else // log in
 	//$email = mysqli_real_escape_string($conn, $email );
 	
 	$db = new DbHandler();
-	$result = $db->checkClientLogin($email, $_POST['password']);
+	$correctPassword = $db->checkClientLogin($email, $_POST['password']);
 		
 	// true if password is correct
-	if ( $result ) 
+	if ( $correctPassword ) 
 	{
-		// assign vaues from db to row
-		//$row = mysqli_fetch_assoc($result);
-		
-		if($row['active'] != 1) // true if client not logged in (field active = 1)
+
+		if($db->clientIsActive($email) == false) // true if client not logged in (field active = 1)
 		{
-		
-			// set cookie with client id for later usage
-        	setcookie("ClientId", $clientId, time()+3600, "/");
-				
-			// redirect to account page
-			header('Location: ../account.php');	
+							
+			$updateClientRowSuccessful = $db->updateClientLogin($email);
 			
-			// set cookie with client id for later usage
-			
-			// TODO: 
-			// get client id
-			
-        	setcookie("ClientId", $clientId, time()+3600, "/");
+			// true if update successful
+			if ($updateClientRowSuccessful ) 
+			{	
+				unset($_SESSION["error"]);
+				unset($_SESSION["info"]);
 				
-			// // get values
-		    // $email = $row['email'];
-        	// //$pass = $row['password_hash'];
-			
-			// /* free result set */
-    		// mysqli_free_result($result);
-		
-			// // update active field + update last login stamp
-			// // get timestamp
-			// $timestamp = date('Y-m-d H:i:s');
-			// // assemble query
-			// $sql = "update clients set active = '1', last_sign_in_stamp = '$timestamp' where email = '$email'";
-			
-			// $result = mysqli_query($conn, $sql);
-			
-			// // true if update successfull
-			// if ($result ) 
-			// {	
-				// unset($_SESSION["error"]);
-				// unset($_SESSION["info"]);
+				$clientId = $db->getClientId($email);
 				
-				// // set cookie with email
-        		// setcookie("Email", $email, time()+3600, "/");
+				if ($clientId == -1) {
+					// error getting client id 
+					$_SESSION['error'] = "Error occurred while logging in.";	
 				
-				// // get client by email
-				// $sql = "select id from clients where email='$email' limit 1";
-				// $result = mysqli_query($conn, $sql);
-				// $value = mysqli_fetch_object($result);	
-				// $clientId = $value->id;
+					// redirect to login page
+					header('Location: ../index.php');
+					exit();
+				}
 				
-				// // redirect to account page
-				// header('Location: ../account.php');	
-			// } 
-			// else 
-			// {
-				// // couldn't perform update
-				// $_SESSION['error'] = "Error occured while logging in.";	
+				// set cookie with email
+        		setcookie("Email", $email, time()+3600, "/");
+				setcookie("ClientId", $clientId, time()+3600, "/");
 				
-				// // redirect to login page
-				// header('Location: ../index.php');
-			// }	
+				// redirect to account page
+				header('Location: ../account.php');	
+			} 
+			else 
+			{
+				// couldn't perform update
+				$_SESSION['error'] = "Error occured while logging in.";	
+				
+				// redirect to login page
+				header('Location: ../index.php');
+				exit();
+			}	
 		}
 		else
 		{
+		
 			// employee already logged in
-			$_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
+			//$_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
 			
 			// redirect to login page
-			header('Location: ../index.php');	
+			//header('Location: ../index.php');	
+			
+			// redirect to account page
+			header('Location: ../account.php');	
+			exit();
 		}
 	
 	} // employee number (or password) incorrect / unknown
@@ -154,6 +142,7 @@ else // log in
     	$_SESSION['error'] = "Incorrect email or password." ;
 		// redirect to login page
     	header('Location: ../index.php');	
+		exit();
 	}
 }
  ?>

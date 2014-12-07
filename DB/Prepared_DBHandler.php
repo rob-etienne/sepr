@@ -156,6 +156,38 @@ class DbHandler {
         $stmt->close();
         return $num_rows > 0;
     }
+	
+	 /**
+     * Checking if client is already signed in
+     * @param String $email email to check in db
+     * @return boolean is active true/false
+     */
+    public function clientIsActive($email) {
+		
+        //$stmt = $this->conn->prepare("SELECT id from client WHERE email = ?");
+		$sql = "SELECT active from clients WHERE email = ?";
+		
+		if( !$stmt = $this->conn->prepare( $sql ) ) {
+			
+			//echo 'Error: ' . $this->conn->error;
+			//exit();
+			return false; // throw exception, die(), exit, whatever...			
+		}
+		
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+		$stmt->bind_result($active);
+        $stmt->store_result();
+		$stmt->fetch();
+        $stmt->close();
+		
+		if ($active == 1) {
+			return true; 
+		} else {
+			return false;
+		}
+
+    }
 
     /**
      * Checking user login
@@ -195,6 +227,43 @@ class DbHandler {
             // client not existed with the email
             return FALSE;
         }
+    }
+	
+	/**
+    * Updating client login
+    */
+    public function updateClientLogin($email) {
+	
+		$timestamp = date('Y-m-d H:i:s');
+		$sql = "update clients set active = '1', last_sign_in_stamp = '$timestamp' where email = ?";
+	
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $num_affected_rows = $stmt->affected_rows;
+        $stmt->close();
+        return $num_affected_rows > 0;
+    }
+	
+	 /**
+     * Get client id
+     */
+    public function getClientId($email) {
+	
+		$sql = "select id from clients where email = ?";
+		
+		if( !$stmt = $this->conn->prepare( $sql ) ) {
+			return -1;	
+		}
+		
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+		$stmt->bind_result($id);
+        $stmt->store_result();
+		$stmt->fetch();
+        $stmt->close();
+
+		return $id;
     }
 
 
