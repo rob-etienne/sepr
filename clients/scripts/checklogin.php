@@ -88,6 +88,13 @@ else // log in
 				
 			// redirect to account page
 			header('Location: ../account.php');	
+			
+			// set cookie with client id for later usage
+			
+			// TODO: 
+			// get client id
+			
+        	setcookie("ClientId", $clientId, time()+3600, "/");
 				
 			// // get values
 		    // $email = $row['email'];
@@ -118,9 +125,6 @@ else // log in
 				// $result = mysqli_query($conn, $sql);
 				// $value = mysqli_fetch_object($result);	
 				// $clientId = $value->id;
-				
-				// // set cookie with client id for later usage
-        		// setcookie("ClientId", $clientId, time()+3600, "/");
 				
 				// // redirect to account page
 				// header('Location: ../account.php');	
