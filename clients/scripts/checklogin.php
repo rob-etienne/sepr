@@ -1,4 +1,5 @@
 <?php 
+include_once('../../DB/Prepared_DBHandler.php');
 session_start();
 
 // needed for CSRF token
@@ -43,98 +44,76 @@ if (empty($_POST['email']) || !empty($errEmail) || !empty($errEmailVal) || empty
       	{
         	$_SESSION['error'] = "Please enter your email.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errEmailVal))
       	{
         	$_SESSION['error'] = "The email you've entered is not valid.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errPass))
       	{
         	$_SESSION['error'] = "Please enter a password.";
 			header('Location: ../index.php');
+			exit();
       	}
     	elseif (!empty($errCSRF))
       	{
         	$_SESSION['error'] = $errCSRF;
 			header('Location: ../index.php');
+			exit();
       	}
    	}
 }
 else // log in
 {	
-	// perform login with db check
-	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
+		
 	// clean up employee nr
 	$email = trim($_POST['email']);
 	$email = stripslashes( $email );
 	$email = htmlspecialchars($email);
-	$email = mysqli_real_escape_string($conn, $email );
+	//$email = mysqli_real_escape_string($conn, $email );
 	
-	// clean up password
-	$pass = trim($_POST[ 'password' ]);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
-
-	// assemle query
-	$sql = "select * from clients where email = '$email' and password_hash = '$pass'";
-	
-	// run the query
-	$result = mysqli_query($conn, $sql);
-
-	// true if employee exists
-	if ( $result && mysqli_num_rows( $result ) == 1 ) 
+	$db = new DbHandler();
+	$correctPassword = $db->checkClientLogin($email, $_POST['password']);
+		
+	// true if password is correct
+	if ( $correctPassword ) 
 	{
-		// assign vaues from db to row
-		$row = mysqli_fetch_assoc($result);
-		
-		if(!$row['active'] == 1) // true if client not logged in (field active = 1)
-		{
-			// get values
-		    $email = $row['email'];
-        	$pass = $row['password_hash'];
+
+		// if($db->clientIsActive($email) == false) // true if client not logged in (field active = 1)
+		// {
+							
+			$updateClientRowSuccessful = $db->updateClientLogin($email);
 			
-			/* free result set */
-    		mysqli_free_result($result);
-		
-			// update active field + update last login stamp
-			// get timestamp
-			$timestamp = date('Y-m-d H:i:s');
-			// assemble query
-			$sql = "update clients set active = '1', last_sign_in_stamp = '$timestamp' where email = '$email'";
-			
-			$result = mysqli_query($conn, $sql);
-			
-			// true if update successfull
-			if ($result ) 
+			// true if update successful
+			if ($updateClientRowSuccessful ) 
 			{	
 				unset($_SESSION["error"]);
 				unset($_SESSION["info"]);
 				
+				$clientId = $db->getClientId($email);
+				
+				if ($clientId == -1) {
+					// error getting client id 
+					$_SESSION['error'] = "Error occurred while logging in.";	
+				
+					// redirect to login page
+					header('Location: ../index.php');
+					exit();
+				}
+				
+				//var_dump($_COOKIE);
+				//exit();
+				
 				// set cookie with email
         		setcookie("Email", $email, time()+3600, "/");
-				
-				// get client by email
-				$sql = "select id from clients where email='$email' limit 1";
-				$result = mysqli_query($conn, $sql);
-				$value = mysqli_fetch_object($result);	
-				$clientId = $value->id;
-				
-				// set cookie with client id for later usage
-        		setcookie("ClientId", $clientId, time()+3600, "/");
+				setcookie("ClientId", $clientId, time()+3600, "/");
 				
 				// redirect to account page
 				header('Location: ../account.php');	
+				exit();
 			} 
 			else 
 			{
@@ -143,26 +122,31 @@ else // log in
 				
 				// redirect to login page
 				header('Location: ../index.php');
+				exit();
 			}	
-		}
-		else
-		{
-			// employee already logged in
-			$_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
+		// }
+		// else
+		// {
+		
+			// // employee already logged in
+			// $_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
 			
-			// redirect to login page
-			header('Location: ../index.php');	
-		}
+			// // redirect to login page
+			// header('Location: ../index.php');	
+			
+			// // redirect to account page
+			// //header('Location: ../account.php');	
+			// //exit();
+		// }
 	
-		// close db connection
-		mysqli_close($conn);
 	} // employee number (or password) incorrect / unknown
 	else 
 	{
 		// Login failed
-    	$_SESSION['error'] = "Incorrect email or password.";
+    	$_SESSION['error'] = "Incorrect email or password." ;
 		// redirect to login page
     	header('Location: ../index.php');	
+		exit();
 	}
 }
  ?>

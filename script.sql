@@ -86,15 +86,15 @@ INSERT INTO `sepr_project`.`advisors`(`employee_nr`, `password_hash`) VALUES ('4
 
 /* Insert dummy clients */
 INSERT INTO `sepr_project`.`clients` (`first_name`, `last_name`, `email`, `password_hash`, `advisor_id`) VALUES
-('Max', 'Scholz', 'max@email.com', '5f4dcc3b5aa765d61d8327deb882cf99', 2);
+('Max', 'Scholz', 'max@email.com', '$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye', 2);
 INSERT INTO `sepr_project`.`clients` (`first_name`, `last_name`, `email`, `password_hash`, `advisor_id`) VALUES
-('Tatsuya', 'Kaneko', 'tatsuya@email.com', '5f4dcc3b5aa765d61d8327deb882cf99', 1);
+('Tatsuya', 'Kaneko', 'tatsuya@email.com', '$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye', 1);
 INSERT INTO `sepr_project`.`clients` (`first_name`, `last_name`, `email`, `password_hash`, `advisor_id`) VALUES
-('Jan', 'Sviland', 'jan@email.com', '5f4dcc3b5aa765d61d8327deb882cf99', 2);
+('Jan', 'Sviland', 'jan@email.com', '$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye', 2);
 INSERT INTO `sepr_project`.`clients` (`first_name`, `last_name`, `email`, `password_hash`, `advisor_id`) VALUES
-('Rob', 'Etienne', 'rob@email.com', '5f4dcc3b5aa765d61d8327deb882cf99', 1);
+('Rob', 'Etienne', 'rob@email.com', '$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye', 1);
 INSERT INTO `sepr_project`.`clients` (`first_name`, `last_name`, `email`, `password_hash`, `advisor_id`) VALUES
-('John', 'Greece Last Name', 'john@email.com', '5f4dcc3b5aa765d61d8327deb882cf99', 1);
+('John', 'Greece Last Name', 'john@email.com', '$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye', 1);
 
 /* Insert dummy accounts */
 INSERT INTO `sepr_project`.`accounts` (`id`, `name`, `balance`, `client_id`) VALUES 

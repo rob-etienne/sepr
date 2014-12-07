@@ -1,4 +1,5 @@
 <?php 
+include_once('../../DB/Prepared_DBHandler.php');
 session_start();
 
 // for CSRF token check
@@ -53,41 +54,49 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
       	{
         	$_SESSION['error'] = "Please enter a first name.";
 			header('Location: ../registration.php.php');
+			exit();
       	}
     	elseif (!empty($errLname))
       	{
         	$_SESSION['error'] = "Please enter a last name.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errEmail))
       	{
         	$_SESSION['error'] = "Please enter an email address.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errEmailVal))
       	{
         	$_SESSION['error'] = "Please enter a valid email address.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPass))
       	{
         	$_SESSION['error'] = "Please enter a password.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPassConfirm))
       	{
         	$_SESSION['error'] = "Please confirm the password.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPassMatch))
       	{
         	$_SESSION['error'] = "The two passwords don't match.";
 			header('Location: ../registration.php');
+			exit();
       	}
 		elseif (!empty($errCSRF))
       	{
         	$_SESSION['error'] = $errCSRF;
 			header('Location: ../registration.php');
+			exit();
       	}
    }
 }
@@ -98,67 +107,47 @@ else
 	//	2. Send email to user ? 
 	//	3. Activation first before login ? (together with 2.)
 	
-	// perform login with db check
-	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
 	// clean up first name
 	$fname = trim($_POST['firstName']);
 	$fname = stripslashes( $fname );
 	$fname = htmlspecialchars($fname);
-	$fname = mysqli_real_escape_string($conn, $fname );
+	//$fname = mysqli_real_escape_string($conn, $fname );
 
 	// clean up first name
 	$lname = trim($_POST['lastName']);
 	$lname = stripslashes( $lname );
 	$lname = htmlspecialchars($lname);
-	$lname = mysqli_real_escape_string($conn, $lname );
+	//$lname = mysqli_real_escape_string($conn, $lname );
 	
 	// clean up email
 	$email = trim($_POST['email']);
 	$email = stripslashes( $email );
 	$email = htmlspecialchars($email);
-	$email = mysqli_real_escape_string($conn, $email );
+	//$email = mysqli_real_escape_string($conn, $email );
 	
-	// clean up password
-	$pass = trim($_POST['pass']);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
-	
-	// query without file upload
-	$sql = "insert into clients(first_name, last_name, email, password_hash) values ('$fname', '$lname', '$email', '$pass')";
+	// get password input
+	$pass = $_POST[ 'pass' ];
 		
-	// run the query
-	$result = mysqli_query($conn, $sql);
-   
+	$db = new DbHandler();
+	$result = $db->createClient($fname, $lname, $email, $pass);
+	
   	// check result
 	if($result)
 	{
-		// Message sucessfully added
+		// Account successfully created
 		
 		// clean up unused notifications
 		unset($_SESSION['error']);
 		unset($_SESSION['info']);
 	
 		// set success message
-		$_SESSION['success'] = "Registration successfull. An account was opened for you. Log in to get started.";
+		$_SESSION['success'] = "Registration successful. An account was opened for you. Log in to get started.";
 	}
 	else
 	{
 		// Sending message failed
-		$_SESSION['error'] = "Error occured while registering.";
+		$_SESSION['error'] = "Error occurred while registering.";
 	}
-	
-	// close db connection	
-	mysqli_close($conn);
 		
   	header('Location: ../registration.php');
 }
