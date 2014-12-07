@@ -71,14 +71,14 @@ class DbHandler {
     /**
      * Updating advisor logout
      */
-    public function updateAdvisorLogin($empNr) {
-        $stmt = $this->conn->prepare("UPFDATE advisors SET active = '0'WHERE employee_nr = ?");
-        $stmt->bind_param("i", $empNr);
-        $stmt->execute();
-        $num_affected_rows = $stmt->affected_rows;
-        $stmt->close();
-        return $num_affected_rows > 0;
-    }
+    // public function updateAdvisorLogin($empNr) {
+        // $stmt = $this->conn->prepare("UPFDATE advisors SET active = '0'WHERE employee_nr = ?");
+        // $stmt->bind_param("i", $empNr);
+        // $stmt->execute();
+        // $num_affected_rows = $stmt->affected_rows;
+        // $stmt->close();
+        // return $num_affected_rows > 0;
+    // }
 
     /* ------------- `clients` table method ------------------ */
 
@@ -90,13 +90,20 @@ class DbHandler {
      * @param String $password Client login password
      */
     public function createClient($firstName, $lastName, $email, $password) {
-        require_once 'PassHash.php';
-        $response = array();
 
         // First check if client already existed in db
         if (!$this->isClientExists($email)) {
             // Generating password hash
-            $password_hash = PassHash::hash($password);
+				
+			// PASSWORD_DEFAULT will always be used to apply the strongest supported hashing algorithm.
+			// PHP will choose the encryption to use and it might change in the future 
+			// at time of writing it will be using CRYPT_BLWFISH, salt and type of encryption is stores together 
+			// with the hash it self
+			$options = [
+				'cost' => 12
+			];
+	
+			$password_hash = password_hash($password, PASSWORD_DEFAULT, $options);		
 
             // insert query
             $stmt = $this->conn->prepare("INSERT INTO clients(first_name, last_name, password_hash, email) values(?, ?, ?, ?)");
@@ -109,17 +116,21 @@ class DbHandler {
             // Check for successful insertion
             if ($result) {
                 // Client successfully inserted
-                return CLIENT_CREATED_SUCCESSFULLY;
+                //return CLIENT_CREATED_SUCCESSFULLY;
+				return true;
             } else {
                 // Failed to create client
-                return CLIENT_CREATE_FAILED;
+                //return CLIENT_CREATE_FAILED;
+				return false;
             }
         } else {
             // Client with same email already existed in the db
-            return CLIENT_ALREADY_EXISTED;
+            //return CLIENT_ALREADY_EXISTED;
+			return false;
         }
 
-        return $response;
+        //return $response;
+		return false;
     }
 
     /**
@@ -128,7 +139,16 @@ class DbHandler {
      * @return boolean
      */
     private function isClientExists($email) {
-        $stmt = $this->conn->prepare("SELECT id from client WHERE email = ?");
+		
+        //$stmt = $this->conn->prepare("SELECT id from client WHERE email = ?");
+		$sql = "SELECT id from client WHERE email = ?";
+		
+		if( !$stmt = $this->conn->prepare( $sql ) ) {
+			
+			//echo 'Error: ' . $db->error;
+			return false; // throw exception, die(), exit, whatever...			
+		}
+		
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $stmt->store_result();
@@ -154,16 +174,15 @@ class DbHandler {
         $stmt->bind_result($password_hash);
 
         $stmt->store_result();
-
+		
         if ($stmt->num_rows > 0) {
             // Found client with the email
             // Now verify the password
 
             $stmt->fetch();
-
-            $stmt->close();
-
-            if (PassHash::check_password($password_hash, $password)) {
+			
+            if (password_verify($password, $password_hash)) {
+			
                 // User password is correct
                 return TRUE;
             } else {

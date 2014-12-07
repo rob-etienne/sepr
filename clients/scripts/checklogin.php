@@ -1,4 +1,5 @@
 <?php 
+include_once('../../DB/Prepared_DBHandler.php');
 session_start();
 
 // needed for CSRF token
@@ -63,101 +64,75 @@ if (empty($_POST['email']) || !empty($errEmail) || !empty($errEmailVal) || empty
 }
 else // log in
 {	
-	// perform login with db check
-	// Create connection
-	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
+		
 	// clean up employee nr
 	$email = trim($_POST['email']);
 	$email = stripslashes( $email );
 	$email = htmlspecialchars($email);
-	$email = mysqli_real_escape_string($conn, $email );
+	//$email = mysqli_real_escape_string($conn, $email );
 	
-	// get password input
-	$pass = $_POST[ 'password' ];
-
-	// get row hash from database 
-	$sql = "select email, password_hash, active from clients where email = '$email'";
-	$result = mysqli_query($conn, $sql);
-	if (mysqli_num_rows( $result ) == 0)
-	{
-		// Email not found in the database... 
-		// Login failed
-    	$_SESSION['error'] = "Incorrect email or password.";
-		// redirect to login page
-    	header('Location: ../index.php');		
-	}
-	
-	$row = mysqli_fetch_assoc($result);
-	$hash = $row['password_hash'];
-
-	// assemle query
-	//$sql = "select * from clients where email = '$email' and password_hash = '$pass'";
-	
-	// run the query
-	//$result = mysqli_query($conn, $sql);
-
-	// check password
-	$matched = password_verify( $pass, $hash );
-	
+	$db = new DbHandler();
+	$result = $db->checkClientLogin($email, $_POST['password']);
+		
 	// true if password is correct
-	if ( $matched == true ) 
+	if ( $result ) 
 	{
 		// assign vaues from db to row
 		//$row = mysqli_fetch_assoc($result);
 		
 		if($row['active'] != 1) // true if client not logged in (field active = 1)
 		{
-			// get values
-		    $email = $row['email'];
-        	//$pass = $row['password_hash'];
-			
-			/* free result set */
-    		mysqli_free_result($result);
 		
-			// update active field + update last login stamp
-			// get timestamp
-			$timestamp = date('Y-m-d H:i:s');
-			// assemble query
-			$sql = "update clients set active = '1', last_sign_in_stamp = '$timestamp' where email = '$email'";
+			// set cookie with client id for later usage
+        	setcookie("ClientId", $clientId, time()+3600, "/");
+				
+			// redirect to account page
+			header('Location: ../account.php');	
+				
+			// // get values
+		    // $email = $row['email'];
+        	// //$pass = $row['password_hash'];
 			
-			$result = mysqli_query($conn, $sql);
+			// /* free result set */
+    		// mysqli_free_result($result);
+		
+			// // update active field + update last login stamp
+			// // get timestamp
+			// $timestamp = date('Y-m-d H:i:s');
+			// // assemble query
+			// $sql = "update clients set active = '1', last_sign_in_stamp = '$timestamp' where email = '$email'";
 			
-			// true if update successfull
-			if ($result ) 
-			{	
-				unset($_SESSION["error"]);
-				unset($_SESSION["info"]);
+			// $result = mysqli_query($conn, $sql);
+			
+			// // true if update successfull
+			// if ($result ) 
+			// {	
+				// unset($_SESSION["error"]);
+				// unset($_SESSION["info"]);
 				
-				// set cookie with email
-        		setcookie("Email", $email, time()+3600, "/");
+				// // set cookie with email
+        		// setcookie("Email", $email, time()+3600, "/");
 				
-				// get client by email
-				$sql = "select id from clients where email='$email' limit 1";
-				$result = mysqli_query($conn, $sql);
-				$value = mysqli_fetch_object($result);	
-				$clientId = $value->id;
+				// // get client by email
+				// $sql = "select id from clients where email='$email' limit 1";
+				// $result = mysqli_query($conn, $sql);
+				// $value = mysqli_fetch_object($result);	
+				// $clientId = $value->id;
 				
-				// set cookie with client id for later usage
-        		setcookie("ClientId", $clientId, time()+3600, "/");
+				// // set cookie with client id for later usage
+        		// setcookie("ClientId", $clientId, time()+3600, "/");
 				
-				// redirect to account page
-				header('Location: ../account.php');	
-			} 
-			else 
-			{
-				// couldn't perform update
-				$_SESSION['error'] = "Error occured while logging in.";	
+				// // redirect to account page
+				// header('Location: ../account.php');	
+			// } 
+			// else 
+			// {
+				// // couldn't perform update
+				// $_SESSION['error'] = "Error occured while logging in.";	
 				
-				// redirect to login page
-				header('Location: ../index.php');
-			}	
+				// // redirect to login page
+				// header('Location: ../index.php');
+			// }	
 		}
 		else
 		{
@@ -168,13 +143,11 @@ else // log in
 			header('Location: ../index.php');	
 		}
 	
-		// close db connection
-		mysqli_close($conn);
 	} // employee number (or password) incorrect / unknown
 	else 
 	{
 		// Login failed
-    	$_SESSION['error'] = "Incorrect email or password. \n$pass \n\n$hash" ;
+    	$_SESSION['error'] = "Incorrect email or password." ;
 		// redirect to login page
     	header('Location: ../index.php');	
 	}

@@ -1,4 +1,5 @@
 <?php 
+include_once('../../DB/Prepared_DBHandler.php');
 session_start();
 
 // for CSRF token check
@@ -98,73 +99,47 @@ else
 	//	2. Send email to user ? 
 	//	3. Activation first before login ? (together with 2.)
 	
-	// perform login with db check
-	// Create connection
-	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
 	// clean up first name
 	$fname = trim($_POST['firstName']);
 	$fname = stripslashes( $fname );
 	$fname = htmlspecialchars($fname);
-	$fname = mysqli_real_escape_string($conn, $fname );
+	//$fname = mysqli_real_escape_string($conn, $fname );
 
 	// clean up first name
 	$lname = trim($_POST['lastName']);
 	$lname = stripslashes( $lname );
 	$lname = htmlspecialchars($lname);
-	$lname = mysqli_real_escape_string($conn, $lname );
+	//$lname = mysqli_real_escape_string($conn, $lname );
 	
 	// clean up email
 	$email = trim($_POST['email']);
 	$email = stripslashes( $email );
 	$email = htmlspecialchars($email);
-	$email = mysqli_real_escape_string($conn, $email );
+	//$email = mysqli_real_escape_string($conn, $email );
 	
 	// get password input
-	$pass = $_POST[ 'password' ];
-	
-	// PASSWORD_DEFAULT will always be used to apply the strongest supported hashing algorithm.
-	// PHP will choose the encryption to use and it might change in the future 
-	// at time of writing it will be using CRYPT_BLWFISH, salt and type of encryption is stores together 
-	// with the hash it self
-	$options = [
-		'cost' => 12
-	];
-	
-	$pass = password_hash($pass, PASSWORD_DEFAULT, $options);
-	
-	// query without file upload
-	$sql = "insert into clients(first_name, last_name, email, password_hash) values ('$fname', '$lname', '$email', '$pass')";
+	$pass = $_POST[ 'pass' ];
 		
-	// run the query
-	$result = mysqli_query($conn, $sql);
-   
+	$db = new DbHandler();
+	$result = $db->createClient($fname, $lname, $email, $pass);
+	
   	// check result
 	if($result)
 	{
-		// Message sucessfully added
+		// Account successfully created
 		
 		// clean up unused notifications
 		unset($_SESSION['error']);
 		unset($_SESSION['info']);
 	
 		// set success message
-		$_SESSION['success'] = "Registration successfull. An account was opened for you. Log in to get started.";
+		$_SESSION['success'] = "Registration successful. An account was opened for you. Log in to get started.";
 	}
 	else
 	{
 		// Sending message failed
-		$_SESSION['error'] = "Error occured while registering.";
+		$_SESSION['error'] = "Error occurred while registering.";
 	}
-	
-	// close db connection	
-	mysqli_close($conn);
 		
   	header('Location: ../registration.php');
 }
