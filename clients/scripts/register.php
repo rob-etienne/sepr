@@ -54,41 +54,49 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
       	{
         	$_SESSION['error'] = "Please enter a first name.";
 			header('Location: ../registration.php.php');
+			exit();
       	}
     	elseif (!empty($errLname))
       	{
         	$_SESSION['error'] = "Please enter a last name.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errEmail))
       	{
         	$_SESSION['error'] = "Please enter an email address.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errEmailVal))
       	{
         	$_SESSION['error'] = "Please enter a valid email address.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPass))
       	{
         	$_SESSION['error'] = "Please enter a password.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPassConfirm))
       	{
         	$_SESSION['error'] = "Please confirm the password.";
 			header('Location: ../registration.php');
+			exit();			
       	}
 		elseif (!empty($errPassMatch))
       	{
         	$_SESSION['error'] = "The two passwords don't match.";
 			header('Location: ../registration.php');
+			exit();
       	}
 		elseif (!empty($errCSRF))
       	{
         	$_SESSION['error'] = $errCSRF;
 			header('Location: ../registration.php');
+			exit();
       	}
    }
 }

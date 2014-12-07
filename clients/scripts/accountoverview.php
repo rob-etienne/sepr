@@ -14,6 +14,16 @@ if ($conn->connect_error)
 
 // clean up employee nr
 $clientId = $_COOKIE["ClientId"];
+
+if ($clientId == null) {
+	// couldn't perform update
+	$_SESSION['error'] = "You need to enable cookies to view this site.";	
+				
+	// redirect to login page
+	header('Location: index.php');
+	exit();
+}
+
 $clientId = stripslashes( $clientId );
 $clientId = htmlspecialchars($clientId);	
 $clientId = mysqli_real_escape_string($conn, $clientId );

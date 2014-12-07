@@ -82,8 +82,8 @@ else // log in
 	if ( $correctPassword ) 
 	{
 
-		if($db->clientIsActive($email) == false) // true if client not logged in (field active = 1)
-		{
+		// if($db->clientIsActive($email) == false) // true if client not logged in (field active = 1)
+		// {
 							
 			$updateClientRowSuccessful = $db->updateClientLogin($email);
 			
@@ -104,12 +104,16 @@ else // log in
 					exit();
 				}
 				
+				//var_dump($_COOKIE);
+				//exit();
+				
 				// set cookie with email
         		setcookie("Email", $email, time()+3600, "/");
 				setcookie("ClientId", $clientId, time()+3600, "/");
 				
 				// redirect to account page
 				header('Location: ../account.php');	
+				exit();
 			} 
 			else 
 			{
@@ -120,20 +124,20 @@ else // log in
 				header('Location: ../index.php');
 				exit();
 			}	
-		}
-		else
-		{
+		// }
+		// else
+		// {
 		
-			// employee already logged in
-			//$_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
+			// // employee already logged in
+			// $_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
 			
-			// redirect to login page
-			//header('Location: ../index.php');	
+			// // redirect to login page
+			// header('Location: ../index.php');	
 			
-			// redirect to account page
-			header('Location: ../account.php');	
-			exit();
-		}
+			// // redirect to account page
+			// //header('Location: ../account.php');	
+			// //exit();
+		// }
 	
 	} // employee number (or password) incorrect / unknown
 	else 
