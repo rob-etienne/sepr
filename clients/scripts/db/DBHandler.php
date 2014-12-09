@@ -78,12 +78,24 @@ class DbHandler {
      */
     private function isClientExists($email) 
 	{	
-		$stmt = $this->conn->prepare("SELECT id from client WHERE email = ?");	
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->store_result();
-        $num_rows = $stmt->num_rows;
-        $stmt->close();
+	
+		$stmt = $this->conn->prepare("SELECT id from clients WHERE email = ?");	
+		
+		if ($stmt) {
+			$stmt->bind_param("s", $email);
+			$stmt->execute();
+			$stmt->store_result();
+			$num_rows = $stmt->num_rows;
+			$stmt->close();		
+		} else {
+		
+			// print error message if sql fails
+			printf("Errormessage: %s\n", $this->conn->error);
+			var_dump($stmt);
+			exit();
+			
+		}		
+
         return $num_rows > 0;
     }
 	
