@@ -4,6 +4,9 @@ session_start();
 // for CSRF token check
 include_once('../includes/nocsrf.php');
 
+// needed for helpers (like clean up data)
+include_once('../includes/helpers.php');
+
 // Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
@@ -26,30 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
     }
 	
 	// check if field is empty
-	if(empty($_POST['client']))
+	if(!Helpers::validateInteger($_POST['client']))
     	$errClient = 1;
-	// check if field is empty
-	if(empty($_POST['subject']))
+	// check if subject is valid
+	if(!Helpers::validateSubject($_POST['subject']))
     	$errSubject = 1;
-	// check if field is empty
-    if(empty($_POST['message']))
+	// check if message is valid
+	if(!Helpers::validateMessage($_POST['message']))
     	$errMessage = 1;
-	// check if message has 150 characters max.
-	if(strlen($_POST['message']) > 150)
-		$errMessLength = 1;
-	// check if subject has 50 characters max.
-	if(strlen($_POST['subject']) > 50)
-		$errSubLength = 1;
-		
-	// Regular Expressions checks
-	// Subject: should start with letter, max of 50, only letters and numbers
-	// TODO: Allow certain special characters like: [?], [!], [.], [,], [€], [$], and whitespaces 
-	if (!preg_match('/^[A-Za-z]{1}[A-Za-z0-9]{5,50}$/', $_POST['subject']))
-		$errRegExSub = 1;
-	// Message: should start with letter, max of 150, only letters and numbers
-	// TODO: Allow certain special characters like: [?], [!], [.], [,], [€], [$], and whitespaces 
-	if (!preg_match('/^[A-Za-z]{1}[A-Za-z0-9]{5,150}$/', $_POST['message']))
-		$errRegExMess = 1;
+	// check if file is valid
+	//if(!Helpers::validateFileUpload($_FILES['upload']['name']))
+    //	$errFile = 1;
 			
 	// check file upload
 	if($_FILES['upload']['name'])
@@ -96,43 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
 }
 
 //Check all fields
-if (empty($_POST['subject']) || empty($_POST['message']) || empty($_POST['client']) || !empty($errClient)  || !empty($errMessage) || !empty($errRegExSub) || !empty($errRegExMess) || !empty($errSubject) || !empty($errMessLength) || !empty($errSubLength) || !empty($errCSRF) || !empty($errFile) || $_SERVER['REQUEST_METHOD'] == 'GET')
+if (empty($_POST['subject']) || empty($_POST['message']) || empty($_POST['client']) || !empty($errClient)  || !empty($errMessage) || !empty($errSubject) || !empty($errCSRF) || !empty($errFile) || $_SERVER['REQUEST_METHOD'] == 'GET')
 {
 	if ($_SERVER['REQUEST_METHOD'] == 'POST')
    	{
     	if (!empty($errSubject))
       	{
-        	$_SESSION['error'] = "Please enter a subject.";
+        	$_SESSION['error'] = "Please enter a subject. Min. characters 5 and max. 50. Start with capital letter. Only characters, numbers and these: '.' , ':'";
 			header('Location: ../account.php');
       	}
     	elseif (!empty($errMessage))
       	{
-        	$_SESSION['error'] = "Please enter a message.";
-			header('Location: ../account.php');
-      	}
-		elseif (!empty($errMessLength))
-      	{
-        	$_SESSION['error'] = "Message is too long. 150 characters max.";
-			header('Location: ../account.php');
-      	}
-		elseif (!empty($errSubLength))
-      	{
-        	$_SESSION['error'] = "Subject is too long. 50 characters max.";
-			header('Location: ../account.php');
-      	}
-		elseif (!empty($errRegExSub))
-      	{
-        	$_SESSION['error'] = "Subject should start with a letter, 50 characters max., and only letters and numbers are permitted.";
-			header('Location: ../account.php');
-      	}
-		elseif (!empty($errRegExMess))
-      	{
-        	$_SESSION['error'] = "Message should start with a letter, 150 characters max., and only letters and numbers are permitted.";
-			header('Location: ../account.php');
-      	}
-		elseif (!empty($errCSRF))
-      	{
-        	$_SESSION['error'] = $errCSRF;
+        	$_SESSION['error'] = "Please enter a message. Min. characters 5 and max. 150. Start with capital letter. Only characters, numbers and these: '.' , ':'";
 			header('Location: ../account.php');
       	}
 		elseif (!empty($errFile))
@@ -140,9 +105,9 @@ if (empty($_POST['subject']) || empty($_POST['message']) || empty($_POST['client
         	$_SESSION['error'] = $errFile;
 			header('Location: ../account.php');
       	}
-		elseif (!empty($errClient))
+		elseif (!empty($errCSRF))
       	{
-        	$_SESSION['error'] = "Please select a client.";
+        	$_SESSION['error'] = $errCSRF;
 			header('Location: ../account.php');
       	}
    	}
@@ -160,28 +125,16 @@ else // send message
 	}
 	
 	// clean up employee nr
-	$empNr = $_COOKIE["EmployeeNr"];
-	$empNr = stripslashes( $empNr );
-	$empNr = htmlspecialchars($empNr);	
-	$empNr = mysqli_real_escape_string($conn, $empNr );
+	$empNr = Helpers::cleanData($_COOKIE['EmployeeNr']);
 	
 	// clean up subject
-	$subject = trim($_POST['subject']);
-	$subject = stripslashes( $subject );
-	$subject = htmlspecialchars($subject);
-	$subject = mysqli_real_escape_string($conn, $subject );
+	$subject = Helpers::cleanData($_POST['subject']);
 	
 	// clean up message
-	$message = trim($_POST['message']);
-	$message = stripslashes( $message );
-	$message = htmlspecialchars($message);
-	$message = mysqli_real_escape_string($conn, $message );
+	$message = Helpers::cleanData($_POST['message']);
 	
-	// clean up client id 
-	$clientId = trim($_POST['client']);
-	$clientId = stripslashes( $clientId );
-	$clientId = htmlspecialchars($clientId);
-	$clientId = mysqli_real_escape_string($conn, $clientId );
+	// clean up client id
+	$clientId = Helpers::cleanData($_POST['client']);
 	
 	// check if file is attached to form
 	if($fileToUpload)

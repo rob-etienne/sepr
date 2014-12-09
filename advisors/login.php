@@ -28,6 +28,9 @@ $tokenLogin = NoCSRF::generate( 'csrf_token_login' );
 			   ' . $_SESSION['error'] . '
 			  </div>
 			</div>';
+			
+				unset($_SESSION['error']);
+			
         	} // or info messages
 			elseif (isset($_SESSION['info'])) 
 	    	{
@@ -40,7 +43,25 @@ $tokenLogin = NoCSRF::generate( 'csrf_token_login' );
 			   ' . $_SESSION['info'] . '
 			  </div>
 			</div>';
-        	}
+				
+				unset($_SESSION['info']);
+        	
+			} // or success messages
+			elseif (isset($_SESSION['success'])) 
+	    	{
+				echo '
+			<div class="panel panel-success">
+			  <div class="panel-heading">
+				<h3 class="panel-title">Success</h3>
+			  </div>
+			  <div class="panel-body">
+			   ' . $_SESSION['success'] . '
+			  </div>
+			</div>';
+			
+				unset($_SESSION['success']);			
+        	
+			}
 			else
 			{
 				// do nothing
