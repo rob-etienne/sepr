@@ -8,7 +8,11 @@ ini_set("display_errors", 1);
 
 // Prevention CSRF attacks
 include_once('includes/nocsrf.php');
+//generate token for form
 $tokenMessage = NoCSRF::generate( 'csrf_token_message' );
+
+// needed for helpers (like clean up data)
+include_once('includes/helpers.php');
 
 ?>
 <body>
@@ -91,10 +95,7 @@ $tokenMessage = NoCSRF::generate( 'csrf_token_message' );
             }
             
 		// clean up employee nr
-		$empNr = $_COOKIE["EmployeeNr"];
-		$empNr = stripslashes( $empNr );
-		$empNr = htmlspecialchars($empNr);	
-		$empNr = mysqli_real_escape_string($conn, $empNr );
+		$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
 		
 		// get all clients linked to our employee
         $sql="select c.* from clients c, advisors a where a.employee_nr = '$empNr' and c.advisor_id = a.id";

@@ -3,6 +3,8 @@ session_start();
 
 // needed for CSRF token
 include_once('../includes/nocsrf.php');
+// needed helpers for data clean up and validation
+include_once('../includes/helpers.php');
 
 // Show me all php errors  	
 error_reporting(E_ALL);
@@ -23,35 +25,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
         $errCSRF = $e->getMessage();
     }
 	
-	// check if field is empty
-	if(empty($_POST['email']))
+	// check if email is valid
+	if(!Helpers::validateEmail($_POST['email']))
     	$errEmail = 1;
-	// check if employee number is integer
-	if(function_exists('filter_var') && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL))
-    	$errEmailVal = 1;
-	// check if field is empty
-    if(empty($_POST['password']))
+	// check if password is valid
+    if(!Helpers::validatePassword($_POST['password']))
     	$errPass = 1;
 }
 
-//Check all fields
-if (empty($_POST['email']) || !empty($errEmail) || !empty($errEmailVal) || empty($_POST['password']) || !empty($errPass) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
+// Check all fields again & for errors found
+if (empty($_POST['email']) || !empty($errEmail) || empty($_POST['password']) || !empty($errPass) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
 {
 	if ($_SERVER['REQUEST_METHOD'] == 'POST')
    	{
     	if (!empty($errEmail))
       	{
-        	$_SESSION['error'] = "Please enter your email.";
-			header('Location: ../index.php');
-      	}
-    	elseif (!empty($errEmailVal))
-      	{
-        	$_SESSION['error'] = "The email you've entered is not valid.";
+        	$_SESSION['error'] = "Please enter a valid email.";
 			header('Location: ../index.php');
       	}
     	elseif (!empty($errPass))
       	{
-        	$_SESSION['error'] = "Please enter a password.";
+        	$_SESSION['error'] = "Please enter a compliant password.";
 			header('Location: ../index.php');
       	}
     	elseif (!empty($errCSRF))
@@ -74,9 +68,7 @@ else // log in
 	}
 	
 	// clean up employee nr
-	$email = trim($_POST['email']);
-	$email = stripslashes( $email );
-	$email = htmlspecialchars($email);
+	$email = Helpers::cleanData($_POST['email']);
 	$email = mysqli_real_escape_string($conn, $email );
 	
 	// clean up password

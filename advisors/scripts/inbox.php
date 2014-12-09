@@ -13,10 +13,7 @@ if ($conn->connect_error)
 }
 
 // clean up employee nr
-$empNr = $_COOKIE["EmployeeNr"];
-$empNr = stripslashes( $empNr );
-$empNr = htmlspecialchars($empNr);	
-$empNr = mysqli_real_escape_string($conn, $empNr );
+$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
 	
 // get all clients linked to our employee
 $sql="select m.* from messages m order by m.submitted_stamp desc";

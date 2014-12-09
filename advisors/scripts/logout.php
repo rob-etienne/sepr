@@ -4,6 +4,9 @@ session_start();
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
+// needed for helpers (like clean up data)
+include_once('../includes/helpers.php');
+
 // check if an advisor is logged in
 if (isset($_COOKIE['EmployeeNr']))
 {
@@ -18,7 +21,7 @@ if (isset($_COOKIE['EmployeeNr']))
 	}
 	
 	// get employee id from cookie
-	$empNr = $_COOKIE["EmployeeNr"];
+	$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
 	
 	// assemble query
 	$sql = "select active from advisors where active = '0' and employee_nr = '$empNr'";

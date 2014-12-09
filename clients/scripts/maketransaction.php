@@ -1,88 +1,67 @@
-<?php
+<?php 
 session_start();
 
-// Show me all php errors
+// needed for CSRF token
+include_once('../includes/nocsrf.php');
+// needed helpers for data clean up and validation
+include_once('../includes/helpers.php');
 
+// Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
-// Prevention CSRF attacks
-
-include_once ('../includes/nocsrf.php');
-
-// Special checks for input fields
-
+// Checks for input fields
 if ($_SERVER['REQUEST_METHOD'] == 'POST')
 {
-
 	// check CSRF token
-
 	try
 	{
-
 		// Run CSRF check, on POST data, in exception mode, for 3 minutes, in one-time mode.
-
 		if (NoCSRF::check('csrf_token_transaction', $_POST, true, 60 * 3, false));
 	}
-
 	catch(Exception $e)
 	{
-
 		// CSRF attack detected
-
 		$errCSRF = $e->getMessage();
 	}
-
-	// check if fields are empty
-
-	if (empty($_POST['account'])) $errClientAcc = 1;
-	if (empty($_POST['accountnr'])) $errAccNr = 1;
-	if (function_exists('filter_var') && !filter_var($_POST['accountnr'], FILTER_VALIDATE_INT)) $errAccNrVal = 1;
-	if (empty($_POST['amount'])) $errAmount = 1;
-	if (function_exists('filter_var') && !filter_var($_POST['amount'], FILTER_VALIDATE_FLOAT)) $errAmountVal = 1;
-	if (empty($_POST['purpose'])) $errPurpose = 1;
-	if (strlen($_POST['purpose']) > 100) $errPurposeLength = 1;
+	
+	// check if account (from) is valid
+	if(!Helpers::validateInteger($_POST['account']))
+    	$errClientAcc = 1;
+	// check if account (to) is valid
+	if(!Helpers::validateInteger($_POST['accountnr']))
+    	$errAccNr = 1;
+	// check if account is valid
+	if(!Helpers::validateAmount($_POST['amount']))
+    	$errAmount = 1;
+	// check if account is valid
+	if(!Helpers::validatePurpose($_POST['purpose']))
+    	$errPurpose = 1;
 }
 
-// Check all fields
-
-if (empty($_POST['accountnr']) || empty($_POST['amount']) || empty($_POST['purpose']) || empty($_POST['account']) || !empty($errClientAcc) || !empty($errAccNr) || !empty($errAccNrVal) || !empty($errAmount) || !empty($errAmountVal) || !empty($errPurpose) || !empty($errPurposeLength) || $_SERVER['REQUEST_METHOD'] == 'GET')
+// Check all fields again & for errors found
+if (empty($_POST['accountnr']) || empty($_POST['amount']) || empty($_POST['purpose']) || empty($_POST['account']) || !empty($errClientAcc) || !empty($errAccNr) || !empty($errAmount) || !empty($errPurpose) || $_SERVER['REQUEST_METHOD'] == 'GET')
 {
 	if ($_SERVER['REQUEST_METHOD'] == 'POST')
 	{
 		if (!empty($errClientAcc))
 		{
-			$_SESSION['error'] = "Please select an account for the transaction.";
+			$_SESSION['error'] = "Please select an account for the transaction. (Integer, 4 digits)";
 			header('Location: ../transaction.php');
 		}
 		elseif (!empty($errAccNr))
 		{
-			$_SESSION['error'] = "Please enter an account number.";
-			header('Location: ../transaction.php');
-		}
-		elseif (!empty($errAccNrVal))
-		{
-			$_SESSION['error'] = "Account number is not valid.";
+			$_SESSION['error'] = "Please enter a compliant account number. (Integer, 4 digits)";
 			header('Location: ../transaction.php');
 		}
 		elseif (!empty($errAmount))
 		{
-			$_SESSION['error'] = "Please enter an amount.";
-			header('Location: ../transaction.php');
-		}
-		elseif (!empty($errAmountVal))
-		{
-			$_SESSION['error'] = "Amount is not valid.";
+			$_SESSION['error'] = "Please enter an amount. Minimum transaction amount is 5.00€ and maximum amount is 1.000.000€. (Decimal, using a dot as delimiter)";
 			header('Location: ../transaction.php');
 		}
 		elseif (!empty($errPurpose))
 		{
-			$_SESSION['error'] = "Please enter a purpose.";
-			header('Location: ../transaction.php');
-		}
-		elseif (!empty($errPurposeLength))
-		{
-			$_SESSION['error'] = "Entered purpose is too long, 100 characters max.";
+			$_SESSION['error'] = "Please enter a purpose. Only characters, whitespaces and these special characters: ... Min. length 5 and max. 100. Should start with capital letter.";
 			header('Location: ../transaction.php');
 		}
 		elseif (!empty($errCSRF))
@@ -94,7 +73,6 @@ if (empty($_POST['accountnr']) || empty($_POST['amount']) || empty($_POST['purpo
 }
 else
 {
-
 	//	TODO:
 	//  1. Add transaction to database (transactions table, make link to account)
 	// input message in db
@@ -263,7 +241,7 @@ else
 	// close db connection
 
 	mysqli_close($conn);
-
+	
 	// go back to transaction page
 
 	header('Location: ../transaction.php');

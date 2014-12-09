@@ -2,15 +2,17 @@
 session_start();
 include ('includes/htmlhead.php');
 
-// Show me all php errors
+// needed helpers for data clean up and validation
+include_once('includes/helpers.php');
 
+// Show me all php errors
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
 // Prevention CSRF attacks
-
 include_once ('includes/nocsrf.php');
 
+// token for transaction form
 $tokenTransaction = NoCSRF::generate('csrf_token_transaction');
 ?>
 

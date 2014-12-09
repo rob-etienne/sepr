@@ -1,8 +1,10 @@
 <?php 
 session_start();
 
-// for CSRF token check
+// needed for CSRF token
 include_once('../includes/nocsrf.php');
+// needed helpers for data clean up and validation
+include_once('../includes/helpers.php');
 
 // Show me all php errors  	
 error_reporting(E_ALL);
@@ -23,60 +25,56 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
         $errCSRF = $e->getMessage();
     }
 	
-    if(empty($_POST['firstName']))
+	// check if first name is valid
+	if(!Helpers::validateName($_POST['firstName']))
     	$errFname = 1;
-    if(empty($_POST['lastName']))
+	// check if last name is valid
+	if(!Helpers::validateName($_POST['lastName']))
     	$errLname = 1;
-    if(empty($_POST['email']))
+	// check if email is valid
+	if(!Helpers::validateEmail($_POST['email']))
     	$errEmail = 1;
-    if (function_exists('filter_var') && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL))
-    	$errEmailVal = 1;
-    if(empty($_POST['pass']))
+	// check if password is valid
+    if(!Helpers::validatePassword($_POST['pass']))
     	$errPass = 1;
-    if(empty($_POST['passConfirm']))
+	// check if confirmation password is valid
+    else if(!Helpers::validatePassword($_POST['passConfirm']))
     	$errPassConfirm = 1;
-    if($_POST['pass'] !== $_POST['passConfirm'])
+	// check if both passwords match
+    else if($_POST['pass'] !== $_POST['passConfirm'])
     	$errPassMatch = 1;
-		
-	/*if (!preg_match('/^[A-Za-z]{1}[A-Za-z0-9]{5,50}$/', $_POST['firstName']))
-		$errFnameRegEx = 1;
-	if (!preg_match('/^[A-Za-z]{1}[A-Za-z0-9]{5,50}$/', $_POST['lastName']))
-		$errLnameRegEx = 1;*/
 }
 
-//Check all fields
-if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName']) || !empty($errLname) || empty($_POST['email']) || !empty($errEmail) || empty($_POST['pass']) || !empty($errPass) || empty($_POST['passConfirm']) || !empty($errPassConfirm) || !empty($errPassMatch) || !empty($errEmailVal) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
+// Check all fields again & for errors found
+if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName']) || !empty($errLname) || empty($_POST['email']) || !empty($errEmail) || empty($_POST['pass']) || !empty($errPass) || empty($_POST['passConfirm']) || !empty($errPassConfirm) || !empty($errPassMatch) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
 {
    if ($_SERVER['REQUEST_METHOD'] == 'POST')
    {
+	   // redirecting always to registration.php with the respective error message within a session
+	   
 	   if (!empty($errFname))
       	{
-        	$_SESSION['error'] = "Please enter a first name.";
-			header('Location: ../registration.php.php');
+        	$_SESSION['error'] = "Please enter a first name. Only characters are allowed. Should start with a capital letter. Min. length is 3 and max. is 50.";
+			header('Location: ../registration.php');
       	}
     	elseif (!empty($errLname))
       	{
-        	$_SESSION['error'] = "Please enter a last name.";
+        	$_SESSION['error'] = "Please enter a last name. Only characters are allowed. Should start with a capital letter. Min. length is 3 and max. is 50.";
 			header('Location: ../registration.php');
       	}
 		elseif (!empty($errEmail))
       	{
-        	$_SESSION['error'] = "Please enter an email address.";
-			header('Location: ../registration.php');
-      	}
-		elseif (!empty($errEmailVal))
-      	{
-        	$_SESSION['error'] = "Please enter a valid email address.";
+        	$_SESSION['error'] = "Please enter a valid email address. In the format like name@domain.com.";
 			header('Location: ../registration.php');
       	}
 		elseif (!empty($errPass))
       	{
-        	$_SESSION['error'] = "Please enter a password.";
+        	$_SESSION['error'] = "Please enter a compliant password. See password requirements.";
 			header('Location: ../registration.php');
       	}
 		elseif (!empty($errPassConfirm))
       	{
-        	$_SESSION['error'] = "Please confirm the password.";
+        	$_SESSION['error'] = "Please re-enter your password.";
 			header('Location: ../registration.php');
       	}
 		elseif (!empty($errPassMatch))
@@ -91,14 +89,8 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
       	}
    }
 }
-else
-{   
-	//	TODO:
-	//  1. Add client to database (client table, make link to advisor)
-	//	2. Send email to user ? 
-	//	3. Activation first before login ? (together with 2.)
-	
-	// perform login with db check
+else // We are good to go for the DB communication
+{
 	// Create connection
 	$conn = new mysqli("localhost", "root", "root", "sepr_project");
 	
@@ -109,29 +101,19 @@ else
 	}
 	
 	// clean up first name
-	$fname = trim($_POST['firstName']);
-	$fname = stripslashes( $fname );
-	$fname = htmlspecialchars($fname);
+	$fname = Helpers::cleanData($_POST['firstName']);
 	$fname = mysqli_real_escape_string($conn, $fname );
 
 	// clean up first name
-	$lname = trim($_POST['lastName']);
-	$lname = stripslashes( $lname );
-	$lname = htmlspecialchars($lname);
+	$lname = Helpers::cleanData($_POST['lastName']);
 	$lname = mysqli_real_escape_string($conn, $lname );
 	
 	// clean up email
-	$email = trim($_POST['email']);
-	$email = stripslashes( $email );
-	$email = htmlspecialchars($email);
+	$email = Helpers::cleanData($_POST['email']);
 	$email = mysqli_real_escape_string($conn, $email );
 	
 	// clean up password
 	$pass = trim($_POST['pass']);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
 	
 	// query without file upload
 	$sql = "insert into clients(first_name, last_name, email, password_hash) values ('$fname', '$lname', '$email', '$pass')";
@@ -154,7 +136,7 @@ else
 	else
 	{
 		// Sending message failed
-		$_SESSION['error'] = "Error occured while registering.";
+		$_SESSION['error'] = "The email is already taken.";
 	}
 	
 	// close db connection	

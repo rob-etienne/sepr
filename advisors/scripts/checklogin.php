@@ -4,6 +4,9 @@ session_start();
 // needed for CSRF token
 include_once('../includes/nocsrf.php');
 
+// needed for helpers (like clean up data)
+include_once('../includes/helpers.php');
+
 // Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
@@ -23,35 +26,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
         $errCSRF = $e->getMessage();
     }
 	
-	// check if field is empty
-	if(empty($_POST['employee_nr']))
+	// check if employee nr is valid
+	if(!Helpers::validateInteger($_POST['employee_nr']))
     	$errEmpNr = 1;
-	// check if employee number is integer
-	if(function_exists('filter_var') && !filter_var($_POST['employee_nr'], FILTER_VALIDATE_INT))
-    	$errEmpNrVal = 1;
-	// check if field is empty
-    if(empty($_POST['pass']))
+	// check if password is valid
+    if(!Helpers::validatePassword($_POST['pass']))
     	$errPass = 1;
 }
 
 //Check all fields
-if (empty($_POST['employee_nr']) || !empty($errEmpNr) || !empty($errEmpNrVal) || empty($_POST['pass']) || !empty($errPass) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
+if (empty($_POST['employee_nr']) || !empty($errEmpNr) || empty($_POST['pass']) || !empty($errPass) || !empty($errCSRF) || $_SERVER['REQUEST_METHOD'] == 'GET')
 {
 	if ($_SERVER['REQUEST_METHOD'] == 'POST')
    	{
     	if (!empty($errEmpNr))
       	{
-        	$_SESSION['error'] = "Please enter your employee number.";
+        	$_SESSION['error'] = "Please enter your employee number. (Integer, 4 digits)";
 			header('Location: ../login.php');
-      	}
-    	elseif (!empty($errEmpNrVal))
-      	{
-        	$_SESSION['error'] = "The employee number you've entered is not valid.";
-			header('Location: ../login.php');
-      	}
+		}
     	elseif (!empty($errPass))
       	{
-        	$_SESSION['error'] = "Please enter a password.";
+        	$_SESSION['error'] = "Please enter a compliant password.";
 			header('Location: ../login.php');
       	}
     	elseif (!empty($errCSRF))
@@ -74,19 +69,11 @@ else // log in
 	}
 	
 	// clean up employee nr
-	$empNr = trim($_POST['employee_nr']);
-	$empNr = stripslashes( $empNr );
-	$empNr = htmlspecialchars($empNr);
-	$empNr = mysqli_real_escape_string($conn, $empNr );
+	$empNr = Helpers::cleanData($_POST['employee_nr']);
+	$pass = Helpers::cleanData($_POST['pass']);
+	$pass = md5($pass);
 	
-	// clean up password
-	$pass = trim($_POST[ 'pass' ]);
-	$pass = stripslashes( $pass );
-	$pass = htmlspecialchars($pass);
-	$pass = mysqli_real_escape_string($conn, $pass );
-	$pass = md5( $pass );
-
-	// assemle query
+	// assemle query 
 	$sql = "select * from advisors where employee_nr = '$empNr' and password_hash = '$pass'";
 	
 	// run the query
