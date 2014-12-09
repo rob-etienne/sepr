@@ -6,6 +6,8 @@ include_once('../includes/nocsrf.php');
 // needed helpers for data clean up and validation
 include_once('../includes/helpers.php');
 
+include_once('db/DBHandler.php');
+
 // Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
@@ -73,177 +75,118 @@ if (empty($_POST['accountnr']) || empty($_POST['amount']) || empty($_POST['purpo
 }
 else
 {
-	//	TODO:
-	//  1. Add transaction to database (transactions table, make link to account)
-	// input message in db
 	// Create connection
-
-	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
-
-	// Check connection
-
-	if ($conn->connect_error)
-	{
-		die("Connection failed: " . $conn->connect_error);
-	}
+	$db = new DbHandler();
 
 	// clean up email address
-
-	$email = $_COOKIE["Email"];
-	$email = stripslashes($email);
-	$email = htmlspecialchars($email);
-	$email = mysqli_real_escape_string($conn, $email);
+	$email = Helpers::cleanData($_SESSION["ClientEmail"]);
 
 	// clean up client id
-
-	$clientId = $_COOKIE["ClientId"];
-	$clientId = stripslashes($clientId);
-	$clientId = htmlspecialchars($clientId);
-	$clientId = mysqli_real_escape_string($conn, $clientId);
+	$clientId = Helpers::cleanData($_SESSION["ClientId"]);
 
 	// clean up account number (from)
-
-	$account_id_from = trim($_POST['account']);
-	$account_id_from = stripslashes($account_id_from);
-	$account_id_from = htmlspecialchars($account_id_from);
-	$account_id_from = mysqli_real_escape_string($conn, $account_id_from);
+	$account_id_from = Helpers::cleanData($_POST['account']);
 
 	// clean up last account number (to)
-
-	$account_id_to = trim($_POST['accountnr']);
-	$account_id_to = stripslashes($account_id_to);
-	$account_id_to = htmlspecialchars($account_id_to);
-	$account_id_to = mysqli_real_escape_string($conn, $account_id_to);
+	$account_id_to = Helpers::cleanData($_POST['accountnr']);
 
 	// clean up amount
-
-	$amount = trim($_POST['amount']);
-	$amount = stripslashes($amount);
-	$amount = htmlspecialchars($amount);
-	$amount = mysqli_real_escape_string($conn, $amount);
+	$amount = Helpers::cleanData($_POST['amount']);
 
 	// clean up purpose
-
-	$purpose = trim($_POST['purpose']);
-	$purpose = stripslashes($purpose);
-	$purpose = htmlspecialchars($purpose);
-	$purpose = mysqli_real_escape_string($conn, $purpose);
+	$purpose = Helpers::cleanData($_POST['purpose']);
 
 	// check if account_id_to exists
-
-	$sql = "select a.id from accounts a, clients c where a.id='$account_id_to' limit 1";
-	$result = mysqli_query($conn, $sql);
-	$value = mysqli_fetch_object($result);
+	$result = $db->FindAccountById($account_id_to);
+	
+	$value = count($result);
+	
 	if (!$value == 0) // account exists
 	{
-
 		// check if client has an account
-
-		$sql = "select a.id from accounts a, clients c where a.client_id = '$clientId' and c.id = '$clientId' limit 1";
-		$result = mysqli_query($conn, $sql);
-		$value = mysqli_fetch_object($result);
+		$result = $db->FindAccountById($account_id_from);
+        
+		$value = count($result);
+		
 		if (!$value == 0) // client has an account
 		{
-
 			// accounts exists & make transaction
-
-			$sql = "insert into transactions (account_id_to, amount, purpose) values ('$account_id_to', '$amount', '$purpose')";
-
+			
 			// run the query
-
-			$result = mysqli_query($conn, $sql);
-
+            $result = $db->addTransaction($account_id_from, $account_id_to, $amount, $purpose);
+			
 			// check result
-
 			if ($result)
 			{
-
 				// get transaction id from last query
-
-				$transaction_id = mysqli_insert_id($conn);
+				$transaction_id = $result;
 
 				// update account_transaction_matches table
-
-				$sql = "insert into account_transaction_matches (transaction_id, account_id_to, account_id_from) values ('$transaction_id', '$account_id_to', '$account_id_from')";
-				$result = mysqli_query($conn, $sql);
-
+                $result = $db->createAccountTransaction($transaction_id, $account_id_to, $account_id_from);
+				
 				// check result
-
 				if ($result)
-				{					
-					// assemble query
-					$sql = "update accounts a set a.balance = a.balance - '$amount' where a.id = '$account_id_from'";
-			
-					$result = mysqli_query($conn, $sql);
+				{
+					// update balance on account (from)
+			        $bal = $db->FetchAccountBalance($account_id_from);
+                    
+					$newbal= $bal - $amount;
+					
+					$result = $db->updateAccount($clientId,$account_id_from,$newbal);
 					
 					if($result)
 					{
-						// assemble query
-					  	$sql = "update accounts a set a.balance = a.balance + '$amount' where a.id = '$account_id_to'";
-			  
-					  	$result = mysqli_query($conn, $sql);
-			  
-			  			if($result)
+						// update balance on account (to)
+			            $bal = $db->FetchAccountBalance($account_id_to);
+                        
+						$bal = $bal + $amount;
+                        
+						$client_id_to = $db->GetClientIdFromAccNr($account_id_to);
+						
+			            $result = $db->updateAccount($client_id_to, $account_id_to, $bal);
+			  			
+						if($result)
 						{
 							// Transaction sucessfully performed & all tables updated
-  
 					  		$_SESSION['success'] = "Transaction made to account with number: $account_id_to.";	
 						}
 					  	else
 						{
 							// Updating tables failed
-
 							$_SESSION['error'] = "Error occured while updating balance (to). Please contact your financial advisor.";	
 						}
 					}
 					else
 					{
 						// Updating tables failed
-
 						$_SESSION['error'] = "Error occured while updating balance (from). Please contact your financial advisor.";	
 					}
 				}
 				else
 				{
-
 					// Updating tables failed
-
 					$_SESSION['error'] = "Error occured while updating matching. Please contact your financial advisor.";
 				}
 			}
 			else
 			{
-
 				// Updating tables failed
-
 				$_SESSION['error'] = "Error occured while making the transaction. Please contact your financial advisor.";
 			}
 		}
 		else
-
-		// client doesn't have an account
-
 		{
-
-			// Updating tables failed
-
+			// client doesn't have an account
 			$_SESSION['error'] = "You don't have an account yet.";
 		}
 	}
 	else
 	{
-
 		// Account of beneficiary doesn't exist
-
 		$_SESSION['error'] = "Entered account doesn't exist";
 	}
-
-	// close db connection
-
-	mysqli_close($conn);
 	
 	// go back to transaction page
-
 	header('Location: ../transaction.php');
 }
 

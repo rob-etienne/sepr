@@ -3,89 +3,51 @@ session_start();
 // Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
-
 // needed for helpers (like clean up data)
 include_once('../includes/helpers.php');
+// needed for prepared DB statements
+include_once('db/DBHandler.php');
 
 // check if an advisor is logged in
-if (isset($_COOKIE['EmployeeNr']))
+if (isset($_SESSION['EmployeeNr']))
 {
-	// perform logout with db check
-	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
+	$db = new DbHandler();
 	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-		die("Connection failed: " . $conn->connect_error);
-	}
+	// get client id from session
+	$empNr = $_SESSION["EmployeeNr"];
 	
-	// get employee id from cookie
-	$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
+	$updateAdvisorRowSuccessful = $db->updateAdvisorLogout($empNr);
 	
-	// assemble query
-	$sql = "select active from advisors where active = '0' and employee_nr = '$empNr'";
-	
-	// run query
-	$result = mysqli_query($conn, $sql);
-	
-	// true if already logged out
-	if (mysqli_num_rows($result) == 1) 
-	{		
-		// set message
-		$_SESSION['info'] = "$empNr is already logged out.";
-		
-		/* free result set */
-		mysqli_free_result($result);
-		mysqli_close($conn);
-		
-		// redirect to index page
-		header('Location:../index.php');
+	// true if update successful
+	if ($updateAdvisorRowSuccessful ) 
+	{	
+		// clean up session
+		session_destroy();
+		session_start();
+			
+		// performed update
+		$_SESSION['info'] = "$empNr is now logged out.";
+
+		// delete cookie
+		setcookie("AdvisorCookieToken", "", time() - 3600);
+			
+		// redirect to login page
+		header('Location: ../index.php');
 		
 	} 
-	else // log out employee
+	else // log out advisor failed
 	{
-		// assemble query
-		$sql = "update advisors set active = '0' where employee_nr = '$empNr'";
-	
-		// true if update successfull
-		if (mysqli_query($conn, $sql)) 
-		{		
-			// clean up session
-			session_destroy();
-			session_start();
+		// couldn't perform update
+		$_SESSION['error'] = "Error while logging out $email.";
 			
-			// performed update
-			$_SESSION['info'] = "$empNr is now logged out.";
-
-			// delete cookie
-			setcookie("EmployeeNr", "", time() - 3600);	
-			
-			/* free result set */
-			mysqli_free_result($result);
-			mysqli_close($conn);
-
-			// redirect to login page
-			header('Location: ../index.php');
-		}
-		else
-		{
-			// couldn't perform update
-			$_SESSION['error'] = "Error while logging out $empNr.";
-			
-			/* free result set */
-			mysqli_free_result($result);
-			mysqli_close($conn);		
-			
-			// redirect to login page
-			header('Location: ../index.php');
-		}	
+		// redirect to login page
+		header('Location: ../index.php');	
 	}
 }
 else
 {
 	// set message
-	$_SESSION['error'] = 'No cookie found.';
+	$_SESSION['error'] = 'Seems like you are already logged out.';
 	// redirect to login page
 	header('Location:../login.php');
 }

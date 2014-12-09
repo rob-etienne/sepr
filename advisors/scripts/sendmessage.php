@@ -3,7 +3,8 @@ session_start();
 
 // for CSRF token check
 include_once('../includes/nocsrf.php');
-
+// needed for db communication
+include_once('db/DBHandler.php');
 // needed for helpers (like clean up data)
 include_once('../includes/helpers.php');
 
@@ -114,18 +115,11 @@ if (empty($_POST['subject']) || empty($_POST['message']) || empty($_POST['client
 }
 else // send message
 {	
-	// input message in db
 	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
+	$db = new DbHandler();
 	
 	// clean up employee nr
-	$empNr = Helpers::cleanData($_COOKIE['EmployeeNr']);
+	$empNr = Helpers::cleanData($_SESSION['EmployeeNr']);
 	
 	// clean up subject
 	$subject = Helpers::cleanData($_POST['subject']);
@@ -149,20 +143,16 @@ else // send message
 			// clean up attachment url
 			$url = stripslashes( $target_file );
 			$url = htmlspecialchars($url);
-			$url = mysqli_real_escape_string($conn, $url );
 			
 			// query with link to file uploaded
-			$sql = "insert into messages (subject, message, attachment_url, client_id) VALUES ('$subject', '$message','$url', '$clientId')";
+			$result = $db->addMessage($clientId, $subject, $message, $url);
 		}
 	}
 	else
 	{
 		// query without file upload
-		$sql = "insert into messages (subject, message, client_id) VALUES ('$subject', '$message', '$clientId')";
+		$result = $db->addMessageWithoutURL($clientId, $subject, $message);
 	}
-		
-	// run the query
-	$result = mysqli_query($conn, $sql);
 	
 	// check result
 	if($result)
@@ -181,9 +171,6 @@ else // send message
 		// Sending message failed
 		$_SESSION['error'] = "Error occured while sending message.";
 	}
-	
-	// close db connection	
-	mysqli_close($conn);
 	
 	// go back to account page
 	header('Location: ../account.php');

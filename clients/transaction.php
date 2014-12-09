@@ -4,6 +4,8 @@ include ('includes/htmlhead.php');
 
 // needed helpers for data clean up and validation
 include_once('includes/helpers.php');
+// needed for DB communication
+include_once('scripts/db/DBHandler.php');
 
 // Show me all php errors
 error_reporting(E_ALL);
@@ -100,34 +102,22 @@ else
               <?php
 
 // Create connection
+$db = new DbHandler();
 
-$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
+// clean up client id
+$clientId = $_SESSION["ClientId"];
 
-// Check connection
+// get all accounts linked to our client
+$result = $db->getAllClientAccounts($clientId);
 
-if ($conn->connect_error)
-{
-	die("Connection failed: " . $conn->connect_error);
-}
-
-// clean up employee nr
-
-$clientId = $_COOKIE["ClientId"];
-$clientId = stripslashes($clientId);
-$clientId = htmlspecialchars($clientId);
-$clientId = mysqli_real_escape_string($conn, $clientId);
-
-// get all clients linked to our employee
-
-$sql = "select a.* from accounts a, clients c where c.id = '$clientId' and a.client_id = c.id";
-$result = mysqli_query($conn, $sql);
 echo "<select name='account' class='form-control' required>";
 echo "<option selected disabled value=''>choose</option>";
 
-if (mysqli_num_rows($result) > 0)
+if (count($result) > 0)
 {
-	while ($row = mysqli_fetch_array($result))
-	{
+    for ($x = 0; $x < count($result); $x++)
+	{  
+        $row = $result[$x];
 		echo "<option value=" . $row['id'] . ">Account ID: " . $row['id'] . " | Name: " . $row['name'] . " | Current balance: " . $row['balance'] . "</option>";
 	}
 
@@ -175,8 +165,6 @@ else
 	echo "<option selected disabled value=''>You don't have any accounts yet.</option>";
 	echo "</select>";
 }
-
-mysqli_close($conn);
 ?>
                  		
 		</div> <!-- /col-md-12 -->

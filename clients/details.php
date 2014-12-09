@@ -5,32 +5,29 @@ session_start();
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
  
+// needed helpers for data clean up and validation
+include_once('includes/helpers.php');
+include_once('scripts/db/DBHandler.php');
+
 include('includes/htmlhead.php');
 
 // Checks for input fields
 if ($_SERVER['REQUEST_METHOD'] == 'GET')
 {	
-	// check if field is empty
-	if(empty($_GET['accountnr']))
+	// check if account (to) is valid
+	if(!Helpers::validateInteger($_GET['accountnr']))
     	$errAccNr = 1;
-	// check if employee number is integer
-	if(function_exists('filter_var') && !filter_var($_GET['accountnr'], FILTER_VALIDATE_INT))
-    	$errAccNrVal = 1;
 }
 
-if(empty($_POST['accountnr']) || !empty($errAccNr) || !empty($errAccNrVal) || $_SERVER['REQUEST_METHOD'] == 'POST')
+if(empty($_POST['accountnr']) || !empty($errAccNr) || $_SERVER['REQUEST_METHOD'] == 'POST')
 {
 	if ($_SERVER['REQUEST_METHOD'] == 'GET')
    	{
     	if (!empty($errAccNr))
       	{
-        	$_SESSION['error'] = "Please provide an account number.";
+        	$_SESSION['error'] = "Please enter a compliant account number. (Integer, 4 digits)";
 			header('Location: ../account.php');
-      	}
-    	elseif (!empty($errAccNrVal))
-      	{
-        	$_SESSION['error'] = "The account number is not valid.";
-			header('Location: ../account.php');
+			exit();
       	}
    	}	
 }
@@ -112,34 +109,16 @@ if(empty($_POST['accountnr']) || !empty($errAccNr) || !empty($errAccNrVal) || $_
       	<?php 
 		
 		// Create connection
-		$conn = new mysqli("localhost", "root", "root", "sepr_project");
-				
-		// Check connection
-		if ($conn->connect_error) 
-		{
-			die("Connection failed: " . $conn->connect_error);
-		}
-		
-		// clean up employee nr
-		$accountNr = $_GET["accountnr"];
-		$accountNr = stripslashes( $accountNr );
-		$accountNr = htmlspecialchars($accountNr);	
-		$accountNr = mysqli_real_escape_string($conn, $accountNr );
+		$db = new DbHandler();
 			
-		// TODO: FIX QUERY
-		// get all clients linked to our employee
-		$sql="
-		select atm.*, t.*, a.* 
-			from account_transaction_matches atm, transactions t, accounts a 
-				where t.id = atm.transaction_id 
-					and a.id = '$accountNr'
-						and atm.account_id_to = '$accountNr' or atm.account_id_from = '$accountNr'
-							order by t.date_stamp desc";
+		// clean up employee nr
+		$accountNr = Helpers::cleanData($_GET["accountnr"]);
+		$clientId = $_SESSION['ClientId'];
 		
 		// run query
-		$result = mysqli_query($conn, $sql);
+		$result = $db->getAllTransactions($clientId ,$accountNr);
 		
-		if(mysqli_num_rows($result) > 0)
+		if(count($result) > 0)
 		{
 			echo "
 			<table class='table table-striped'>
@@ -153,8 +132,10 @@ if(empty($_POST['accountnr']) || !empty($errAccNr) || !empty($errAccNrVal) || $_
 				</thead>
 				<tbody>";
 				
-			while($row = mysqli_fetch_array($result)) 
-			{  
+			for($x = 0; $x < count($result); $x++)
+            {
+                $row = $result[$x];
+				
 				echo "			  
 				<tr>
 				  <td>".$row['date_stamp']."</td>
@@ -169,7 +150,7 @@ if(empty($_POST['accountnr']) || !empty($errAccNr) || !empty($errAccNrVal) || $_
 		}
 		else
 		{
-			echo "No messages found.";
+			echo "No transactions found.";
 		}
 		
 		?>

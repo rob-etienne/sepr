@@ -1,11 +1,11 @@
-<?php 
-include_once('../../DB/Prepared_DBHandler.php');
+<?php
 session_start();
 
 // needed for CSRF token
 include_once('../includes/nocsrf.php');
 // needed helpers for data clean up and validation
 include_once('../includes/helpers.php');
+include_once('db/DBHandler.php');
 
 // Show me all php errors  	
 error_reporting(E_ALL);
@@ -55,14 +55,9 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
 	   
 	   if (!empty($errFname))
       	{
-<<<<<<< HEAD
-        	$_SESSION['error'] = "Please enter a first name.";
-			header('Location: ../registration.php.php');
-			exit();
-=======
         	$_SESSION['error'] = "Please enter a first name. Only characters are allowed. Should start with a capital letter. Min. length is 3 and max. is 50.";
 			header('Location: ../registration.php');
->>>>>>> max
+			exit();	
       	}
     	elseif (!empty($errLname))
       	{
@@ -72,17 +67,13 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
       	}
 		elseif (!empty($errEmail))
       	{
-<<<<<<< HEAD
         	$_SESSION['error'] = "Please enter an email address.";
 			header('Location: ../registration.php');
 			exit();			
       	}
 		elseif (!empty($errEmailVal))
       	{
-        	$_SESSION['error'] = "Please enter a valid email address.";
-=======
-        	$_SESSION['error'] = "Please enter a valid email address. In the format like name@domain.com.";
->>>>>>> max
+			$_SESSION['error'] = "Please enter a valid email address. In the format like name@domain.com.";
 			header('Location: ../registration.php');
 			exit();			
       	}
@@ -112,69 +103,25 @@ if (empty($_POST['firstName']) || !empty($errFname) || empty($_POST['lastName'])
       	}
    }
 }
-<<<<<<< HEAD
-else
-{   
-	//	TODO:
-	//  1. Add client to database (client table, make link to advisor)
-	//	2. Send email to user ? 
-	//	3. Activation first before login ? (together with 2.)
-	
-	// clean up first name
-	$fname = trim($_POST['firstName']);
-	$fname = stripslashes( $fname );
-	$fname = htmlspecialchars($fname);
-	//$fname = mysqli_real_escape_string($conn, $fname );
-
-	// clean up first name
-	$lname = trim($_POST['lastName']);
-	$lname = stripslashes( $lname );
-	$lname = htmlspecialchars($lname);
-	//$lname = mysqli_real_escape_string($conn, $lname );
-	
-	// clean up email
-	$email = trim($_POST['email']);
-	$email = stripslashes( $email );
-	$email = htmlspecialchars($email);
-	//$email = mysqli_real_escape_string($conn, $email );
-	
-	// get password input
-	$pass = $_POST[ 'pass' ];
-=======
 else // We are good to go for the DB communication
 {
-	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
 	// clean up first name
 	$fname = Helpers::cleanData($_POST['firstName']);
-	$fname = mysqli_real_escape_string($conn, $fname );
 
 	// clean up first name
 	$lname = Helpers::cleanData($_POST['lastName']);
-	$lname = mysqli_real_escape_string($conn, $lname );
 	
 	// clean up email
 	$email = Helpers::cleanData($_POST['email']);
-	$email = mysqli_real_escape_string($conn, $email );
 	
 	// clean up password
 	$pass = trim($_POST['pass']);
 	
-	// query without file upload
-	$sql = "insert into clients(first_name, last_name, email, password_hash) values ('$fname', '$lname', '$email', '$pass')";
->>>>>>> max
-		
 	$db = new DbHandler();
-	$result = $db->createClient($fname, $lname, $email, $pass);
 	
-  	// check result
+	$result = $db->createClient($fname, $lname, $email, $pass);	
+  	
+	// check result
 	if($result)
 	{
 		// Account successfully created
@@ -188,12 +135,8 @@ else // We are good to go for the DB communication
 	}
 	else
 	{
-		// Sending message failed
-<<<<<<< HEAD
-		$_SESSION['error'] = "Error occurred while registering.";
-=======
+		// Registration failed
 		$_SESSION['error'] = "The email is already taken.";
->>>>>>> max
 	}
 		
   	header('Location: ../registration.php');

@@ -8,6 +8,7 @@ ini_set("display_errors", 1);
 
 // Prevention CSRF attacks
 include_once('includes/nocsrf.php');
+
 $tokenMesClient = NoCSRF::generate( 'csrf_token_messClient' );
  ?>
 

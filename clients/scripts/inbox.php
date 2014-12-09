@@ -2,29 +2,22 @@
 // Show me all php errors  	
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
-	
-// Create connection
-$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
-		
-// Check connection
-if ($conn->connect_error) 
-{
-	die("Connection failed: " . $conn->connect_error);
-}
 
-// clean up employee nr
-$clientId = $_COOKIE["ClientId"];
-$clientId = stripslashes( $clientId );
-$clientId = htmlspecialchars($clientId);	
-$clientId = mysqli_real_escape_string($conn, $clientId );
-	
-// get all clients linked to our employee
-$sql="select m.* from messages m where m.client_id = '$clientId' order by m.submitted_stamp desc";
+// needed helpers for data clean up and validation
+include_once('includes/helpers.php');
+// needed for prepared DB statements
+include_once('scripts/db/DBHandler.php');
+
+// Create connection
+$db = new DbHandler();
+
+// clean up client id
+$clientId = Helpers::cleanData($_SESSION["ClientId"]);
 
 // run query
-$result = mysqli_query($conn, $sql);
+$result = $db->getAllMessages($clientId);
 
-if(mysqli_num_rows($result) > 0)
+if(count($result) > 0)
 {
 	echo "
 	<table class='table table-striped'>
@@ -38,8 +31,9 @@ if(mysqli_num_rows($result) > 0)
 		</thead>
 		<tbody>";
 		
-	while($row = mysqli_fetch_array($result)) 
+	for ($x = 0; $x < count($result); $x++)
 	{  
+        $row = $result[$x]; 
 		echo "			  
 		<tr>
 		  <td>".$row['submitted_stamp']."</td>

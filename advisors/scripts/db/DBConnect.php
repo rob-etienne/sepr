@@ -9,6 +9,11 @@
 class DbConnect {
 
     private $conn;
+    
+    public function GetConn()
+    {
+        return $this->conn;
+    }
 
     function __construct() {        
     }

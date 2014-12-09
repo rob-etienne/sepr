@@ -8,24 +8,18 @@
     </p>
 
 	<?php
-    	if (isset($_COOKIE['EmployeeNr'])) 
-    	{
-			// Create connection
-			$conn = new mysqli("localhost", "root", "root", "sepr_project");
-		
-			// Check connection
-			if ($conn->connect_error) 
-			{
-				die("Connection failed: " . $conn->connect_error);
-			}
-         	
-         	$empNr = $_COOKIE['EmployeeNr'];
-			
-         	$sql = "select * from advisors where employee_nr = '$empNr' and active = '1'";
+    	if (isset($_SESSION['EmployeeNr'])) 
+    	{    
+			// needed for prepared DB statements
+			include_once('scripts/db/DBHandler.php');
+    	
+			$db = new DbHandler();
+				
+         	$empNr = $_SESSION['EmployeeNr'];
             
-			$result = mysqli_query($conn, $sql);
+           	$result = $db->advisorIsActive($empNr); 
             
-            if (mysqli_num_rows($result) == 0)
+            if (count($result) == 0)
             {
             	echo "Not signed in";
         	}
@@ -36,8 +30,8 @@
         }
         else 
         {
-        	echo "Not signed in";
-        } 	
+        	echo "Not signed in!";
+        }	
     ?>
     </p>
 </div>

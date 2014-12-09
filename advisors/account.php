@@ -6,13 +6,15 @@ include('includes/htmlhead.php');
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
 
-// Prevention CSRF attacks
-include_once('includes/nocsrf.php');
-//generate token for form
-$tokenMessage = NoCSRF::generate( 'csrf_token_message' );
-
 // needed for helpers (like clean up data)
 include_once('includes/helpers.php');
+// needed for DB communication
+include_once('scripts/db/DBHandler.php');
+// Prevention CSRF attacks
+include_once('includes/nocsrf.php');
+
+//generate token for form
+$tokenMessage = NoCSRF::generate( 'csrf_token_message' );
 
 ?>
 <body>
@@ -86,30 +88,23 @@ include_once('includes/helpers.php');
             <div class="col-sm-8">
               <?
                 // Create connection
-            $conn = new mysqli("localhost", "root", "root", "sepr_project");
-            
-            // Check connection
-            if ($conn->connect_error) 
-            {
-                die("Connection failed: " . $conn->connect_error);
-            }
+				$db = new DbHandler();
             
 		// clean up employee nr
-		$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
+		$empNr = Helpers::cleanData($_SESSION["EmployeeNr"]);
 		
-		// get all clients linked to our employee
-        $sql="select c.* from clients c, advisors a where a.employee_nr = '$empNr' and c.advisor_id = a.id";
-        
-        $result = mysqli_query($conn, $sql);
-		
+		// run query
+		$result = $db->getAllClients($empNr);
+	
 		echo "<select name='client' class='form-control' required>"; 
 		echo "<option selected disabled value=''>choose</option>";
 		
-        if(mysqli_num_rows( $result ) > 0)
+        if(count($result) > 0)
 		{
-			while($row = mysqli_fetch_array($result)) 
-			{        
-			echo "<option value=".$row['id'].">Client ID: ".$row['id'] . " | Name: " . $row['first_name'] . " " . $row['last_name']."</option>"; 
+			for ($x = 0; $x < count($result); $x++)
+			{  
+        		$row = $result[$x];       
+				echo "<option value=".$row['id'].">Client ID: ".$row['id'] . " | Name: " . $row['first_name'] . " " . $row['last_name']."</option>"; 
 			}
 			echo "</select>";
 		}
@@ -118,8 +113,6 @@ include_once('includes/helpers.php');
 			echo "<option selected disabled value=''>No clients for you.</option>"; 
 			echo "</select>";	
 		}
-		
-		mysqli_close($conn);
         ?>
             </div>
           </div>

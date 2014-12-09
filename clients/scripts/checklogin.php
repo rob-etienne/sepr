@@ -1,11 +1,15 @@
-<?php 
-include_once('../../DB/Prepared_DBHandler.php');
+<?php
 session_start();
 
 // needed for CSRF token
 include_once('../includes/nocsrf.php');
+$tokenForCookie = NoCSRF::generate( 'csrf_token_cookie' );
+
 // needed helpers for data clean up and validation
 include_once('../includes/helpers.php');
+
+// needed for prepared DB statements
+include_once('db/DBHandler.php');
 
 // Show me all php errors  	
 error_reporting(E_ALL);
@@ -41,17 +45,7 @@ if (empty($_POST['email']) || !empty($errEmail) || empty($_POST['password']) || 
    	{
     	if (!empty($errEmail))
       	{
-<<<<<<< HEAD
-        	$_SESSION['error'] = "Please enter your email.";
-			header('Location: ../index.php');
-			exit();
-      	}
-    	elseif (!empty($errEmailVal))
-      	{
-        	$_SESSION['error'] = "The email you've entered is not valid.";
-=======
-        	$_SESSION['error'] = "Please enter a valid email.";
->>>>>>> max
+        	$_SESSION['error'] = "Please enter a valid email. Format looks like name@domain.com.";
 			header('Location: ../index.php');
 			exit();
       	}
@@ -71,28 +65,17 @@ if (empty($_POST['email']) || !empty($errEmail) || empty($_POST['password']) || 
 }
 else // log in
 {	
-		
-	// clean up employee nr
-<<<<<<< HEAD
-	$email = trim($_POST['email']);
-	$email = stripslashes( $email );
-	$email = htmlspecialchars($email);
-	//$email = mysqli_real_escape_string($conn, $email );
-=======
-	$email = Helpers::cleanData($_POST['email']);
-	$email = mysqli_real_escape_string($conn, $email );
->>>>>>> max
-	
 	$db = new DbHandler();
-	$correctPassword = $db->checkClientLogin($email, $_POST['password']);
+		
+	// clean up email
+	$email = Helpers::cleanData($_POST['email']);
+	$pass = trim($_POST['password']);
+	
+	$correctPassword = $db->checkClientLogin($email, $pass);
 		
 	// true if password is correct
 	if ( $correctPassword ) 
-	{
-
-		// if($db->clientIsActive($email) == false) // true if client not logged in (field active = 1)
-		// {
-							
+	{							
 			$updateClientRowSuccessful = $db->updateClientLogin($email);
 			
 			// true if update successful
@@ -103,7 +86,8 @@ else // log in
 				
 				$clientId = $db->getClientId($email);
 				
-				if ($clientId == -1) {
+				if ($clientId == -1) 
+				{
 					// error getting client id 
 					$_SESSION['error'] = "Error occurred while logging in.";	
 				
@@ -112,12 +96,17 @@ else // log in
 					exit();
 				}
 				
-				//var_dump($_COOKIE);
-				//exit();
+				$expire = time()+3600;
+                $domain = 'localhost';
+                $secure = true;
+                $httponly = true;
+								
+				// set cookie with random token
+        		setcookie("ClientCookieToken", $tokenForCookie, $expire, "/", $domain, $secure, $httponly);
 				
-				// set cookie with email
-        		setcookie("Email", $email, time()+3600, "/");
-				setcookie("ClientId", $clientId, time()+3600, "/");
+				// set sessions for sensitive data
+				$_SESSION["ClientEmail"] = $email;
+				$_SESSION["ClientId"] = $clientId;
 				
 				// redirect to account page
 				header('Location: ../account.php');	
@@ -131,23 +120,8 @@ else // log in
 				// redirect to login page
 				header('Location: ../index.php');
 				exit();
-			}	
-		// }
-		// else
-		// {
-		
-			// // employee already logged in
-			// $_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
-			
-			// // redirect to login page
-			// header('Location: ../index.php');	
-			
-			// // redirect to account page
-			// //header('Location: ../account.php');	
-			// //exit();
-		// }
-	
-	} // employee number (or password) incorrect / unknown
+			}
+	} // client email (or password) incorrect / unknown
 	else 
 	{
 		// Login failed

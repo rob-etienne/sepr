@@ -3,6 +3,10 @@ session_start();
 
 // needed for CSRF token
 include_once('../includes/nocsrf.php');
+$tokenForCookie = NoCSRF::generate( 'csrf_token_cookie' );
+
+// needed for prepared DB statements
+include_once('db/DBHandler.php');
 
 // needed for helpers (like clean up data)
 include_once('../includes/helpers.php');
@@ -58,61 +62,52 @@ if (empty($_POST['employee_nr']) || !empty($errEmpNr) || empty($_POST['pass']) |
 }
 else // log in
 {	
-	// perform login with db check
-	// Create connection
-	$conn = new mysqli("localhost", "root", "root", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
+	$db = new DbHandler();
 	
 	// clean up employee nr
 	$empNr = Helpers::cleanData($_POST['employee_nr']);
-	$pass = Helpers::cleanData($_POST['pass']);
-	$pass = md5($pass);
+	$pass = trim($_POST['pass']);
 	
-	// assemle query 
-	$sql = "select * from advisors where employee_nr = '$empNr' and password_hash = '$pass'";
-	
-	// run the query
-	$result = mysqli_query($conn, $sql);
-
-	// true if employee exists
-	if ( $result && mysqli_num_rows( $result ) == 1 ) 
-	{
-		// assign vaues from db to row
-		$row = mysqli_fetch_assoc($result);
+	$correctPassword = $db->checkAdvisorLogin($empNr, $pass);
 		
-		if(!$row['active'] == 1) // true if employee not logged in (field active = 1)
-		{
-			// get values
-		    $empNr = $row['employee_nr'];
-        	$pass = $row['password_hash'];
+	// true if password is correct
+	if ( $correctPassword ) 
+	{							
+			$updateAdvisorRowSuccessful = $db->updateAdvisorLogin($empNr);
 			
-			/* free result set */
-    		mysqli_free_result($result);
-		
-			// update active field + update last login stamp
-			// get timestamp
-			$timestamp = date('Y-m-d H:i:s');
-			// assemble query
-			$sql = "update advisors set active = '1', last_sign_in_stamp = '$timestamp' where employee_nr = '$empNr'";
-			
-			$result = mysqli_query($conn, $sql);
-			
-			// true if update successfull
-			if ($result ) 
+			// true if update successful
+			if ($updateAdvisorRowSuccessful ) 
 			{	
 				unset($_SESSION["error"]);
 				unset($_SESSION["info"]);
 				
-				// set cookie
-        		setcookie("EmployeeNr", $empNr, time()+3600, "/");
+				$advisorId = $db->getAdvisorId($empNr);
+				
+				if ($advisorId == -1) 
+				{
+					// error getting advisor id 
+					$_SESSION['error'] = "Error occurred while logging in.";	
+				
+					// redirect to login page
+					header('Location: ../index.php');
+					exit();
+				}
+				
+				$expire = time()+3600;
+                $domain = 'localhost';
+                $secure = true;
+                $httponly = true;
+								
+				// set cookie with random token
+        		setcookie("AdvisorCookieToken", $tokenForCookie, $expire, "/", $domain, $secure, $httponly);
+				
+				// set sessions for sensitive data
+				$_SESSION["EmployeeNr"] = $empNr;
+				$_SESSION["EmployeeId"] = $advisorId;
 				
 				// redirect to account page
 				header('Location: ../account.php');	
+				exit();
 			} 
 			else 
 			{
@@ -120,20 +115,9 @@ else // log in
 				$_SESSION['error'] = "Error occured while logging in.";	
 				
 				// redirect to login page
-				header('Location: ../login.php');
-			}	
-		}
-		else
-		{
-			// employee already logged in
-			$_SESSION['error'] = "You are already logged in. If it is not you, please contact your admin asap.";	
-			
-			// redirect to login page
-			header('Location: ../login.php');	
-		}
-	
-		// close db connection
-		mysqli_close($conn);
+				header('Location: ../index.php');
+				exit();
+			}
 	} // employee number (or password) incorrect / unknown
 	else 
 	{

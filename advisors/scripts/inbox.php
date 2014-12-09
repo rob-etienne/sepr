@@ -13,15 +13,12 @@ if ($conn->connect_error)
 }
 
 // clean up employee nr
-$empNr = Helpers::cleanData($_COOKIE["EmployeeNr"]);
+$empNr = Helpers::cleanData($_SESSION["EmployeeNr"]);
 	
-// get all clients linked to our employee
-$sql="select m.* from messages m order by m.submitted_stamp desc";
-
 // run query
-$result = mysqli_query($conn, $sql);
+$result = $db->getAllMessages($empNr);
 
-if(isset($result))
+if(count($result) > 0)
 {
 	echo "
 	<table class='table table-striped'>
@@ -36,8 +33,9 @@ if(isset($result))
 		</thead>
 		<tbody>";
 		
-	while($row = mysqli_fetch_array($result)) 
+	for ($x = 0; $x < count($result); $x++)
 	{  
+        $row = $result[$x];
 		echo "			  
 		<tr>
 		  <td>".$row['submitted_stamp']."</td>

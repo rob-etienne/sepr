@@ -5,6 +5,8 @@ session_start();
 include_once('../includes/nocsrf.php');
 // needed helpers for data clean up and validation
 include_once('../includes/helpers.php');
+// needed for db communication
+include_once('db/DBHandler.php');
 
 // Show me all php errors  	
 error_reporting(E_ALL);
@@ -109,40 +111,18 @@ if (empty($_POST['subject']) || empty($_POST['message']) || !empty($errMessage) 
    	}
 }
 else // send message
-{	
-	// input message in db
+{
 	// Create connection
-	$conn = new mysqli("localhost", "sepr_user", "xsFDr4vuZQH2yFAP", "sepr_project");
-	
-	// Check connection
-	if ($conn->connect_error) 
-	{
-    	die("Connection failed: " . $conn->connect_error);
-	}
-	
-	// clean up email address
-	$email = $_COOKIE["Email"];
-	$email = stripslashes( $email );
-	$email = htmlspecialchars($email);	
-	$email = mysqli_real_escape_string($conn, $email );
+	$db = new DbHandler();
 	
 	// clean up client id
-	$clientId = $_COOKIE["ClientId"];
-	$clientId = stripslashes( $clientId );
-	$clientId = htmlspecialchars($clientId);	
-	$clientId = mysqli_real_escape_string($conn, $clientId );
+	$clientId = Helpers::cleanData($_SESSION['ClientId']);
 	
 	// clean up subject
-	$subject = trim($_POST['subject']);
-	$subject = stripslashes( $subject );
-	$subject = htmlspecialchars($subject);
-	$subject = mysqli_real_escape_string($conn, $subject );
+	$subject = Helpers::cleanData($_POST['subject']);
 	
 	// clean up message
-	$message = trim($_POST['message']);
-	$message = stripslashes( $message );
-	$message = htmlspecialchars($message);
-	$message = mysqli_real_escape_string($conn, $message );
+	$message = Helpers::cleanData($_POST['message']);
 	
 	// check if file is attached to form
 	if($fileToUpload)
@@ -157,20 +137,16 @@ else // send message
 			// clean up attachment url
 			$url = stripslashes( $target_file );
 			$url = htmlspecialchars($url);
-			$url = mysqli_real_escape_string($conn, $url );
 			
 			// query with link to file uploaded
-			$sql = "insert into messages (subject, message, attachment_url, client_id) VALUES ('$subject', '$message','$url', '$clientId')";
+			$result = $db->addMessage($clientId, $subject, $message, $url);
 		}
 	}
 	else
 	{
 		// query without file upload
-		$sql = "insert into messages (subject, message, client_id) VALUES ('$subject', '$message', '$clientId')";
+		$result = $db->addMessageWithoutURL($clientId, $subject, $message);
 	}
-		
-	// run the query
-	$result = mysqli_query($conn, $sql);
 	
 	// check result
 	if($result)
@@ -189,9 +165,6 @@ else // send message
 		// Sending message failed
 		$_SESSION['error'] = "Error occured while sending message.";
 	}
-	
-	// close db connection	
-	mysqli_close($conn);
 	
 	// go back to account page
 	header('Location: ../messages.php');

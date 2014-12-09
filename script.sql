@@ -80,8 +80,8 @@ ALTER TABLE `sepr_project`.`account_transaction_matches` ADD FOREIGN KEY ( `acco
 ALTER TABLE `sepr_project`.`account_transaction_matches` ADD FOREIGN KEY ( `account_id_from` ) REFERENCES  `sepr_project`.`accounts` ( `id` ) ON DELETE CASCADE ON UPDATE CASCADE ;
 
 /* Insert dummy advisors */
-INSERT INTO `sepr_project`.`advisors`(`employee_nr`, `password_hash`) VALUES ('1234','5f4dcc3b5aa765d61d8327deb882cf99');
-INSERT INTO `sepr_project`.`advisors`(`employee_nr`, `password_hash`) VALUES ('4321','5f4dcc3b5aa765d61d8327deb882cf99');
+INSERT INTO `sepr_project`.`advisors`(`employee_nr`, `password_hash`) VALUES ('1234','$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye');
+INSERT INTO `sepr_project`.`advisors`(`employee_nr`, `password_hash`) VALUES ('4321','$2y$12$svXdtmNUEqDRf9RrXLtWEOxNTq/f4REh5fAMWefHYOOZJ8o170rye');
 
 
 /* Insert dummy clients */
